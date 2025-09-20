@@ -1,0 +1,772 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GolApp - Gestión de Canchas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .search-input, .filter-select {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .canchas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .cancha-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .cancha-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .cancha-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .cancha-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .cancha-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-disponible {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-ocupada {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status-mantenimiento {
+            background: #feebc8;
+            color: #7b341e;
+        }
+
+        .cancha-info {
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .info-value {
+            color: #718096;
+        }
+
+        .cancha-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit:hover, .btn-delete:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .close {
+            color: #a0aec0;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #2d3748;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .btn-cancel {
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #cbd5e0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #4a5568;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #4a5568;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-container {
+                flex-direction: column;
+            }
+
+            .canchas-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> Gestión de Canchas</h1>
+            <div class="nav-buttons">
+                <a href="index.html" class="nav-btn">Dashboard</a>
+                <a href="reservas.html" class="nav-btn">Reservas</a>
+                <a href="usuarios.html" class="nav-btn">Usuarios</a>
+                <a href="reportes.html" class="nav-btn">Reportes</a>
+                <button class="nav-btn" onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar canchas...">
+                <select id="tipoFilter" class="filter-select">
+                    <option value="">Todos los tipos</option>
+                </select>
+                <select id="estadoFilter" class="filter-select">
+                    <option value="">Todos los estados</option>
+                    <option value="disponible">Disponible</option>
+                    <option value="ocupada">Ocupada</option>
+                    <option value="mantenimiento">Mantenimiento</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="openModal()">+ Nueva Cancha</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Cargando canchas...</p>
+        </div>
+
+        <div class="canchas-grid" id="canchasGrid"></div>
+
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <h3>No hay canchas disponibles</h3>
+            <p>Comienza agregando tu primera cancha</p>
+        </div>
+    </div>
+
+    <!-- Modal para crear/editar cancha -->
+    <div id="canchaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Nueva Cancha</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="canchaForm">
+                <div class="form-group">
+                    <label class="form-label" for="nombre">Nombre de la Cancha *</label>
+                    <input type="text" id="nombre" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="tipoCancha">Tipo de Cancha *</label>
+                    <select id="tipoCancha" class="form-select" required>
+                        <option value="">Seleccionar tipo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="ubicacion">Ubicación</label>
+                    <input type="text" id="ubicacion" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="capacidad">Capacidad</label>
+                    <input type="number" id="capacidad" class="form-input" min="1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="estado">Estado *</label>
+                    <select id="estado" class="form-select" required>
+                        <option value="disponible">Disponible</option>
+                        <option value="ocupada">Ocupada</option>
+                        <option value="mantenimiento">Mantenimiento</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="descripcion">Descripción</label>
+                    <textarea id="descripcion" class="form-textarea" placeholder="Descripción de la cancha..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Cancha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3100/api';
+        let canchas = [];
+        let tiposCanchas = [];
+        let editingCanchaId = null;
+
+        // Verificar autenticación
+        function checkAuth() {
+            const user = localStorage.getItem('user');
+            if (!user) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        // Cargar tipos de canchas
+        async function loadTiposCanchas() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tipocanchas`);
+                if (response.ok) {
+                    tiposCanchas = await response.json();
+                    populateTipoSelects();
+                }
+            } catch (error) {
+                console.error('Error cargando tipos de canchas:', error);
+            }
+        }
+
+        // Poblar selects de tipos
+        function populateTipoSelects() {
+            const tipoFilter = document.getElementById('tipoFilter');
+            const tipoCancha = document.getElementById('tipoCancha');
+            
+            tiposCanchas.forEach(tipo => {
+                const option1 = document.createElement('option');
+                option1.value = tipo.id;
+                option1.textContent = tipo.nombre;
+                tipoFilter.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = tipo.id;
+                option2.textContent = tipo.nombre;
+                tipoCancha.appendChild(option2);
+            });
+        }
+
+        // Cargar canchas
+        async function loadCanchas() {
+            const loading = document.getElementById('loading');
+            const grid = document.getElementById('canchasGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            loading.style.display = 'block';
+            grid.innerHTML = '';
+            emptyState.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/canchas`);
+                if (response.ok) {
+                    canchas = await response.json();
+                    displayCanchas(canchas);
+                } else {
+                    throw new Error('Error al cargar canchas');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar las canchas');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Mostrar canchas
+        function displayCanchas(canchasToShow) {
+            const grid = document.getElementById('canchasGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (canchasToShow.length === 0) {
+                grid.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            grid.innerHTML = canchasToShow.map(cancha => {
+                const tipoCancha = tiposCanchas.find(t => t.id === cancha.tipoCancha_id);
+                return `
+                    <div class="cancha-card">
+                        <div class="cancha-header">
+                            <h3 class="cancha-name">${cancha.nombre}</h3>
+                            <span class="cancha-status status-${cancha.estado}">${cancha.estado}</span>
+                        </div>
+                        <div class="cancha-info">
+                            <div class="info-row">
+                                <span class="info-label">Tipo:</span>
+                                <span class="info-value">${tipoCancha ? tipoCancha.nombre : 'N/A'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Ubicación:</span>
+                                <span class="info-value">${cancha.ubicacion || 'No especificada'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Capacidad:</span>
+                                <span class="info-value">${cancha.capacidad || 'N/A'} personas</span>
+                            </div>
+                            ${cancha.descripcion ? `
+                            <div class="info-row">
+                                <span class="info-label">Descripción:</span>
+                                <span class="info-value">${cancha.descripcion}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        <div class="cancha-actions">
+                            <button class="btn-edit" onclick="editCancha(${cancha.id})">Editar</button>
+                            <button class="btn-delete" onclick="deleteCancha(${cancha.id})">Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filtrar canchas
+        function filterCanchas() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const tipoFilter = document.getElementById('tipoFilter').value;
+            const estadoFilter = document.getElementById('estadoFilter').value;
+
+            const filtered = canchas.filter(cancha => {
+                const matchesSearch = cancha.nombre.toLowerCase().includes(searchTerm) ||
+                                    (cancha.ubicacion && cancha.ubicacion.toLowerCase().includes(searchTerm));
+                const matchesTipo = !tipoFilter || cancha.tipoCancha_id.toString() === tipoFilter;
+                const matchesEstado = !estadoFilter || cancha.estado === estadoFilter;
+
+                return matchesSearch && matchesTipo && matchesEstado;
+            });
+
+            displayCanchas(filtered);
+        }
+
+        // Abrir modal
+        function openModal(canchaId = null) {
+            const modal = document.getElementById('canchaModal');
+            const title = document.getElementById('modalTitle');
+            const form = document.getElementById('canchaForm');
+
+            editingCanchaId = canchaId;
+
+            if (canchaId) {
+                title.textContent = 'Editar Cancha';
+                const cancha = canchas.find(c => c.id === canchaId);
+                if (cancha) {
+                    document.getElementById('nombre').value = cancha.nombre;
+                    document.getElementById('tipoCancha').value = cancha.tipoCancha_id;
+                    document.getElementById('ubicacion').value = cancha.ubicacion || '';
+                    document.getElementById('capacidad').value = cancha.capacidad || '';
+                    document.getElementById('estado').value = cancha.estado;
+                    document.getElementById('descripcion').value = cancha.descripcion || '';
+                }
+            } else {
+                title.textContent = 'Nueva Cancha';
+                form.reset();
+            }
+
+            modal.style.display = 'block';
+        }
+
+        // Cerrar modal
+        function closeModal() {
+            const modal = document.getElementById('canchaModal');
+            modal.style.display = 'none';
+            editingCanchaId = null;
+        }
+
+        // Editar cancha
+        function editCancha(id) {
+            openModal(id);
+        }
+
+        // Eliminar cancha
+        async function deleteCancha(id) {
+            if (!confirm('¿Estás seguro de que quieres eliminar esta cancha?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/canchas/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Cancha eliminada exitosamente');
+                    loadCanchas();
+                } else {
+                    throw new Error('Error al eliminar cancha');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al eliminar la cancha');
+            }
+        }
+
+        // Manejar envío del formulario
+        document.getElementById('canchaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                nombre: document.getElementById('nombre').value,
+                tipoCancha_id: parseInt(document.getElementById('tipoCancha').value),
+                ubicacion: document.getElementById('ubicacion').value,
+                capacidad: document.getElementById('capacidad').value ? parseInt(document.getElementById('capacidad').value) : null,
+                estado: document.getElementById('estado').value,
+                descripcion: document.getElementById('descripcion').value
+            };
+
+            try {
+                const url = editingCanchaId 
+                    ? `${API_BASE_URL}/canchas/${editingCanchaId}`
+                    : `${API_BASE_URL}/canchas`;
+                
+                const method = editingCanchaId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert(editingCanchaId ? 'Cancha actualizada exitosamente' : 'Cancha creada exitosamente');
+                    closeModal();
+                    loadCanchas();
+                } else {
+                    throw new Error('Error al guardar cancha');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al guardar la cancha');
+            }
+        });
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', filterCanchas);
+        document.getElementById('tipoFilter').addEventListener('change', filterCanchas);
+        document.getElementById('estadoFilter').addEventListener('change', filterCanchas);
+
+        // Cerrar modal al hacer clic fuera
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('canchaModal');
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            if (checkAuth()) {
+                loadTiposCanchas();
+                loadCanchas();
+            }
+        });
+    </script>
+</body>
+</html>
