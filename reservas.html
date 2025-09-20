@@ -499,6 +499,177 @@
             color: #a0aec0;
         }
 
+        /* Estilos para la sección de pago */
+        .payment-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .payment-section h4 {
+            color: #2d3748;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .payment-amount {
+            background: #e8f5e8;
+            border: 1px solid #c6f6d5;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .payment-amount .amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2f855a;
+        }
+
+        .payment-amount .label {
+            font-size: 0.9rem;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-nequi {
+            background: linear-gradient(135deg, #ff6b35, #ff8c42);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .btn-nequi:hover {
+            background: linear-gradient(135deg, #e55a2b, #e67a35);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .payment-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .payment-status.pending {
+            background: #fef3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .payment-status.completed {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Estilos para el modal de pago Nequi */
+        .payment-modal .modal-content {
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .nequi-logo {
+            background: linear-gradient(135deg, #ff6b35, #ff8c42);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .qr-container {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-code {
+            width: 200px;
+            height: 200px;
+        }
+
+        .payment-instructions {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: left;
+        }
+
+        .payment-instructions h5 {
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .payment-instructions ol {
+            margin-left: 1.2rem;
+            color: #4a5568;
+        }
+
+        .payment-instructions li {
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+
+        .payment-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn-confirm-payment {
+            background: #48bb78;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+            transition: background 0.3s ease;
+        }
+
+        .btn-confirm-payment:hover {
+            background: #38a169;
+        }
+
+        .btn-cancel-payment {
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+            transition: background 0.3s ease;
+        }
+
+        .btn-cancel-payment:hover {
+            background: #cbd5e0;
+        }
+
         .empty-state i {
             font-size: 3rem;
             margin-bottom: 1rem;
@@ -698,15 +869,131 @@
                     <textarea id="observaciones" rows="3"></textarea>
                 </div>
 
+                <!-- Sección de Pago -->
+                <div class="form-group payment-section">
+                    <div class="payment-header">
+                        <i class="fas fa-credit-card"></i>
+                        <h4>Información de Pago</h4>
+                    </div>
+                    <div class="payment-info">
+                        <div class="payment-amount">
+                            <span class="payment-label">Abono requerido para reservar:</span>
+                            <span class="payment-value">$15,000 COP</span>
+                        </div>
+                        <div class="payment-note">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Se requiere un abono de $15,000 para confirmar la reserva. El pago restante se realiza en la cancha.</span>
+                        </div>
+                        <button type="button" class="btn btn-payment" onclick="openPaymentModal()">
+                            <i class="fas fa-mobile-alt"></i> Pagar con Nequi
+                        </button>
+                        <div class="payment-status" id="paymentStatus" style="display: none;">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Pago procesado - Reserva pendiente de confirmación</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn btn-success">
+                    <button type="submit" class="btn btn-success" id="saveReservationBtn">
                         <i class="fas fa-save"></i> Guardar
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal para pago con Nequi -->
+    <div class="modal" id="paymentModal">
+        <div class="modal-content payment-modal">
+            <div class="modal-header">
+                <h3>Pago con Nequi</h3>
+                <button class="close-btn" onclick="closePaymentModal()">&times;</button>
+            </div>
+            <div class="payment-modal-body">
+                <div class="payment-amount-display">
+                    <h4>Monto a pagar</h4>
+                    <div class="amount">$15,000 COP</div>
+                </div>
+                
+                <div class="qr-section">
+                    <h4>Escanea el código QR con Nequi</h4>
+                    <div class="qr-container">
+                        <div class="qr-code">
+                            <!-- Código QR simulado con SVG -->
+                            <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="200" height="200" fill="white"/>
+                                <!-- Patrón de código QR simulado -->
+                                <rect x="0" y="0" width="60" height="60" fill="black"/>
+                                <rect x="10" y="10" width="40" height="40" fill="white"/>
+                                <rect x="20" y="20" width="20" height="20" fill="black"/>
+                                
+                                <rect x="140" y="0" width="60" height="60" fill="black"/>
+                                <rect x="150" y="10" width="40" height="40" fill="white"/>
+                                <rect x="160" y="20" width="20" height="20" fill="black"/>
+                                
+                                <rect x="0" y="140" width="60" height="60" fill="black"/>
+                                <rect x="10" y="150" width="40" height="40" fill="white"/>
+                                <rect x="20" y="160" width="20" height="20" fill="black"/>
+                                
+                                <!-- Patrón central -->
+                                <rect x="80" y="80" width="40" height="40" fill="black"/>
+                                <rect x="90" y="90" width="20" height="20" fill="white"/>
+                                <rect x="95" y="95" width="10" height="10" fill="black"/>
+                                
+                                <!-- Patrones adicionales para simular QR -->
+                                <rect x="70" y="10" width="10" height="10" fill="black"/>
+                                <rect x="90" y="10" width="10" height="10" fill="black"/>
+                                <rect x="110" y="10" width="10" height="10" fill="black"/>
+                                <rect x="130" y="10" width="10" height="10" fill="black"/>
+                                
+                                <rect x="10" y="70" width="10" height="10" fill="black"/>
+                                <rect x="10" y="90" width="10" height="10" fill="black"/>
+                                <rect x="10" y="110" width="10" height="10" fill="black"/>
+                                <rect x="10" y="130" width="10" height="10" fill="black"/>
+                                
+                                <rect x="170" y="70" width="10" height="10" fill="black"/>
+                                <rect x="170" y="90" width="10" height="10" fill="black"/>
+                                <rect x="170" y="110" width="10" height="10" fill="black"/>
+                                <rect x="170" y="130" width="10" height="10" fill="black"/>
+                                
+                                <rect x="70" y="170" width="10" height="10" fill="black"/>
+                                <rect x="90" y="170" width="10" height="10" fill="black"/>
+                                <rect x="110" y="170" width="10" height="10" fill="black"/>
+                                <rect x="130" y="170" width="10" height="10" fill="black"/>
+                                <rect x="150" y="170" width="10" height="10" fill="black"/>
+                            </svg>
+                        </div>
+                        <div class="nequi-logo">
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>Nequi</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-instructions">
+                    <h4>Instrucciones:</h4>
+                    <ol>
+                        <li>Abre tu app de Nequi</li>
+                        <li>Selecciona "Pagar con QR"</li>
+                        <li>Escanea este código QR</li>
+                        <li>Confirma el pago de $15,000</li>
+                        <li>Haz clic en "Confirmar Pago" cuando termines</li>
+                    </ol>
+                </div>
+                
+                <div class="payment-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmPayment()">
+                        <i class="fas fa-check"></i> Confirmar Pago
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -1,8 +1,9 @@
-// Usar la configuración global de la API
+// Variables globales
 const API_BASE_URL = CONFIG.API_BASE_URL;
 let reservations = [];
 let canchas = [];
 let currentUser = null;
+let paymentCompleted = false; // Nueva variable para controlar el estado del pago
 
 // Verificar autenticación
 function checkAuth() {
@@ -147,20 +148,29 @@ async function loadReservations() {
     try {
         const response = await fetch(`${API_BASE_URL}/reservas`);
         if (response.ok) {
-            reservations = await response.json();
+            const data = await response.json();
+            // La API devuelve un objeto con reservations array y count
+            reservations = data.reservations || data || [];
+            console.log('Reservations loaded:', reservations); // Debug
             updateStats();
             displayReservations();
+        } else {
+            console.error('Error response:', response.status, response.statusText);
+            Utils.showToast('Error al cargar las reservas', 'error');
         }
     } catch (error) {
         console.error('Error loading reservations:', error);
-        alert('Error al cargar las reservas');
+        Utils.showToast('Error de conexión al cargar las reservas', 'error');
     }
 }
 
 // Actualizar estadísticas
 function updateStats() {
     const today = new Date().toISOString().split('T')[0];
-    const todayReservations = reservations.filter(r => r.fecha === today);
+    const todayReservations = reservations.filter(r => {
+        const reservationDate = r.fecha_reserva || r.fecha;
+        return reservationDate === today;
+    });
     const activeReservations = reservations.filter(r => r.estado === 'confirmada');
     const completedReservations = reservations.filter(r => r.estado === 'completada');
 
@@ -174,7 +184,7 @@ function updateStats() {
 function displayReservations() {
     const container = document.getElementById('reservationsGrid');
     
-    if (reservations.length === 0) {
+    if (!reservations || reservations.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-calendar-times"></i>
@@ -186,7 +196,10 @@ function displayReservations() {
     }
 
     container.innerHTML = reservations.map(reservation => {
-        const cancha = canchas.find(c => c.id === reservation.id_cancha);
+        // Buscar cancha por id, considerando la estructura anidada de la API
+        const cancha = reservation.cancha || canchas.find(c => c.id === reservation.id_cancha);
+        const usuario = reservation.usuario;
+        
         const statusClass = reservation.estado === 'confirmada' ? 'confirmed' : 
                           reservation.estado === 'pendiente' ? 'pending' : 'cancelled';
         
@@ -194,19 +207,19 @@ function displayReservations() {
             <div class="reservation-card ${statusClass}">
                 <div class="reservation-header">
                     <div class="reservation-info">
-                        <h3>${cancha ? cancha.nombre : 'Cancha no encontrada'}</h3>
+                        <h3>${cancha ? (cancha.nombre_cancha || cancha.nombre) : 'Cancha no encontrada'}</h3>
                         <span class="reservation-status status-${statusClass}">
                             ${reservation.estado.charAt(0).toUpperCase() + reservation.estado.slice(1)}
                         </span>
                     </div>
                     <div class="reservation-price">
-                        $${parseFloat(reservation.precio_total || 0).toLocaleString()}
+                        $${parseFloat(reservation.precio_total || reservation.totalPrice || 0).toLocaleString()}
                     </div>
                 </div>
                 <div class="reservation-details">
                     <div class="detail-row">
                         <i class="fas fa-calendar"></i>
-                        <span>${formatDate(reservation.fecha)}</span>
+                        <span>${formatDate(reservation.fecha_reserva || reservation.fecha)}</span>
                     </div>
                     <div class="detail-row">
                         <i class="fas fa-clock"></i>
@@ -214,7 +227,7 @@ function displayReservations() {
                     </div>
                     <div class="detail-row">
                         <i class="fas fa-user"></i>
-                        <span>${reservation.usuario?.nombre || 'Usuario no encontrado'}</span>
+                        <span>${usuario?.nombre || reservation.customerName || 'Usuario no encontrado'}</span>
                     </div>
                     ${reservation.observaciones ? `
                     <div class="detail-row">
@@ -252,7 +265,56 @@ function openCreateModal() {
     document.getElementById('modalTitle').textContent = 'Nueva Reserva';
     document.getElementById('reservationForm').reset();
     document.getElementById('reservationId').value = '';
+    document.getElementById('priceInfo').style.display = 'none';
+    document.getElementById('paymentStatus').style.display = 'none';
+    paymentCompleted = false; // Resetear estado de pago
+    updateSaveButton();
     document.getElementById('reservationModal').classList.add('show');
+}
+
+// Funciones para el modal de pago
+function openPaymentModal() {
+    console.log('openPaymentModal called'); // Debug
+    const modal = document.getElementById('paymentModal');
+    console.log('Modal element:', modal); // Debug
+    if (modal) {
+        modal.style.display = 'flex';
+        console.log('Modal display set to flex'); // Debug
+    } else {
+        console.error('Payment modal not found!');
+    }
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').style.display = 'none';
+}
+
+function confirmPayment() {
+    // Simular procesamiento de pago
+    paymentCompleted = true;
+    
+    // Mostrar estado de pago completado
+    document.getElementById('paymentStatus').style.display = 'block';
+    
+    // Actualizar botón de guardar
+    updateSaveButton();
+    
+    // Cerrar modal de pago
+    closePaymentModal();
+    
+    // Mostrar mensaje de éxito
+    Utils.showToast('Pago procesado exitosamente. La reserva quedará pendiente de confirmación.', 'success');
+}
+
+function updateSaveButton() {
+    const saveBtn = document.getElementById('saveReservationBtn');
+    if (paymentCompleted) {
+        saveBtn.innerHTML = '<i class="fas fa-clock"></i> Crear Reserva Pendiente';
+        saveBtn.disabled = false;
+    } else {
+        saveBtn.innerHTML = '<i class="fas fa-lock"></i> Pago Requerido';
+        saveBtn.disabled = true;
+    }
 }
 
 // Editar reserva
@@ -278,58 +340,135 @@ function closeModal() {
 
 // Guardar reserva
 async function saveReservation() {
-    const form = document.getElementById('reservationForm');
-    const formData = new FormData(form);
-    const reservationId = document.getElementById('reservationId').value;
+    console.log('=== INICIANDO PROCESO DE GUARDADO DE RESERVA ===');
     
+    // Verificar que el pago haya sido completado para nuevas reservas
+    const reservationId = document.getElementById('reservationId').value;
+    if (!reservationId && !paymentCompleted) {
+        console.log('ERROR: Pago no completado para nueva reserva');
+        Utils.showToast('Debe completar el pago antes de crear la reserva', 'error');
+        return;
+    }
+
+    // Obtener datos del formulario
+    const form = document.getElementById('reservationForm');
+    if (!form) {
+        console.error('ERROR: No se encontró el formulario de reserva');
+        Utils.showToast('Error: Formulario no encontrado', 'error');
+        return;
+    }
+
+    const formData = new FormData(form);
+    
+    // Validar campos requeridos
+    const canchaId = formData.get('canchaId');
+    const fecha = formData.get('fecha');
+    const horaInicio = formData.get('horaInicio');
+    const horaFin = formData.get('horaFin');
+
+    console.log('Datos del formulario:', {
+        canchaId,
+        fecha,
+        horaInicio,
+        horaFin,
+        currentUser: currentUser?.id
+    });
+
+    if (!canchaId || !fecha || !horaInicio || !horaFin) {
+        console.error('ERROR: Campos requeridos faltantes');
+        Utils.showToast('Por favor complete todos los campos requeridos', 'error');
+        return;
+    }
+
+    if (!currentUser || !currentUser.id) {
+        console.error('ERROR: Usuario no autenticado');
+        Utils.showToast('Error: Usuario no autenticado', 'error');
+        return;
+    }
+
+    // Obtener observaciones del formulario
+    const observaciones = document.getElementById('observaciones').value.trim();
+
+    // Crear objeto de datos con formato correcto para la base de datos
     const reservationData = {
-        id_cancha: parseInt(formData.get('canchaId')),
-        id_usuario: currentUser.id,
-        fecha: formData.get('fecha'),
-        hora_inicio: formData.get('horaInicio'),
-        hora_fin: formData.get('horaFin'),
-        precio_total: parseFloat(formData.get('precioTotal')),
-        observaciones: formData.get('observaciones'),
-        estado: 'confirmada'
+        id_cancha: parseInt(canchaId),
+        id_usuario: parseInt(currentUser.id),
+        fecha_reserva: new Date(fecha + 'T00:00:00.000Z').toISOString(),
+        hora_inicio: new Date(fecha + 'T' + horaInicio + ':00.000Z').toISOString(),
+        hora_fin: new Date(fecha + 'T' + horaFin + ':00.000Z').toISOString(),
+        estado: (!reservationId && paymentCompleted) ? 'pendiente' : 'confirmada',
+        observaciones: observaciones || null
     };
 
+    console.log('Datos de reserva preparados para envío:', reservationData);
+    console.log('URL del API:', API_BASE_URL);
+
     try {
-        let response;
+        let url, method;
+        
         if (reservationId) {
-            // Actualizar
-            response = await fetch(`${API_BASE_URL}/reservas/${reservationId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(reservationData)
-            });
+            // Actualizar reserva existente
+            url = `${API_BASE_URL}/reservas/${reservationId}`;
+            method = 'PUT';
+            console.log('Actualizando reserva existente:', reservationId);
         } else {
-            // Crear
-            response = await fetch(`${API_BASE_URL}/reservas`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(reservationData)
-            });
+            // Crear nueva reserva
+            url = `${API_BASE_URL}/reservas`;
+            method = 'POST';
+            console.log('Creando nueva reserva');
+        }
+
+        console.log('Enviando petición:', { url, method });
+
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(reservationData)
+        });
+
+        console.log('Respuesta recibida:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries())
+        });
+
+        // Intentar leer la respuesta como JSON
+        let responseData;
+        const responseText = await response.text();
+        console.log('Texto de respuesta crudo:', responseText);
+
+        try {
+            responseData = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error al parsear JSON:', parseError);
+            responseData = { error: 'Respuesta del servidor no válida', rawResponse: responseText };
         }
 
         if (response.ok) {
+            console.log('✅ RESERVA GUARDADA EXITOSAMENTE:', responseData);
             closeModal();
-            loadReservations();
-            alert(reservationId ? 'Reserva actualizada exitosamente' : 'Reserva creada exitosamente');
+            await loadReservations(); // Esperar a que se recarguen las reservas
+            Utils.showToast(reservationId ? 'Reserva actualizada exitosamente' : 'Reserva creada exitosamente', 'success');
+            // Resetear el estado del pago después de crear la reserva
+            paymentCompleted = false;
         } else {
-            const error = await response.json();
-            alert('Error: ' + (error.message || 'No se pudo guardar la reserva'));
+            console.error('❌ ERROR DEL SERVIDOR:', responseData);
+            Utils.showToast(responseData.error || `Error del servidor: ${response.status}`, 'error');
         }
     } catch (error) {
-        console.error('Error saving reservation:', error);
-        alert('Error de conexión');
+        console.error('❌ ERROR DE CONEXIÓN:', error);
+        console.error('Stack trace:', error.stack);
+        Utils.showToast('Error de conexión con el servidor. Verifique su conexión a internet.', 'error');
     }
+
+    console.log('=== FIN DEL PROCESO DE GUARDADO ===');
 }
 
-// Eliminar reserva
+// Editar reserva
 async function deleteReservation(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
         return;

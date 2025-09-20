@@ -6,11 +6,70 @@ const TipoCancha = db.TipoCancha; // ⚠️ Paso 1: Importa el modelo TipoCancha
 
 // Crear una nueva reserva
 exports.create = async (req, res) => {
+  console.log('=== CONTROLADOR: Creando nueva reserva ===');
+  console.log('Datos recibidos:', req.body);
+  
   try {
-    const nuevaReserva = await Reserva.create(req.body);
+    // Validar datos requeridos
+    const { id_cancha, id_usuario, fecha_reserva, hora_inicio, hora_fin, estado } = req.body;
+    
+    if (!id_cancha || !id_usuario || !fecha_reserva || !hora_inicio || !hora_fin) {
+      console.error('ERROR: Campos requeridos faltantes');
+      return res.status(400).json({ 
+        error: 'Campos requeridos faltantes',
+        required: ['id_cancha', 'id_usuario', 'fecha_reserva', 'hora_inicio', 'hora_fin']
+      });
+    }
+
+    // Verificar que la cancha existe
+    const cancha = await db.Cancha.findByPk(id_cancha);
+    if (!cancha) {
+      console.error('ERROR: Cancha no encontrada:', id_cancha);
+      return res.status(404).json({ error: 'Cancha no encontrada' });
+    }
+
+    // Verificar que el usuario existe
+    const usuario = await db.Usuario.findByPk(id_usuario);
+    if (!usuario) {
+      console.error('ERROR: Usuario no encontrado:', id_usuario);
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    console.log('Validaciones pasadas, creando reserva...');
+    
+    const nuevaReserva = await Reserva.create({
+      id_cancha: parseInt(id_cancha),
+      id_usuario: parseInt(id_usuario),
+      fecha_reserva: new Date(fecha_reserva),
+      hora_inicio: new Date(hora_inicio),
+      hora_fin: new Date(hora_fin),
+      estado: estado || 'confirmada'
+    });
+    
+    console.log('✅ Reserva creada exitosamente:', nuevaReserva.toJSON());
     res.status(201).json(nuevaReserva);
   } catch (error) {
-    res.status(500).json({ error: 'Error al crear la reserva' });
+    console.error('❌ ERROR al crear la reserva:', error);
+    console.error('Stack trace:', error.stack);
+    
+    // Manejar errores específicos de Sequelize
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ 
+        error: 'Error de validación',
+        details: error.errors.map(e => ({ field: e.path, message: e.message }))
+      });
+    }
+    
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ 
+        error: 'Error de clave foránea: Verifique que la cancha y usuario existan'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Error interno del servidor al crear la reserva',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
