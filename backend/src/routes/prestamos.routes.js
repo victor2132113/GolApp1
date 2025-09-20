@@ -3,18 +3,18 @@ const router = express.Router();
 const prestamosController = require('../controllers/prestamos.controller');
 
 // Crear un nuevo préstamo
-router.post('/prestamos', prestamosController.create);
+router.post('/', prestamosController.create);
 
 // Obtener todos los préstamos
-router.get('/prestamos', prestamosController.findAll);
+router.get('/', prestamosController.findAll);
 
 // Obtener un solo préstamo por su ID
-router.get('/prestamos/:id', prestamosController.findOne);
+router.get('/:id', prestamosController.findOne);
 
 // Actualizar un préstamo
-router.put('/prestamos/:id', prestamosController.update);
+router.put('/:id', prestamosController.update);
 
 // Eliminar un préstamo
-router.delete('/prestamos/:id', prestamosController.delete);
+router.delete('/:id', prestamosController.delete);
 
 module.exports = router;

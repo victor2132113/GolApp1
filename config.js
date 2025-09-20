@@ -1,4 +1,4 @@
-﻿// Configuración global de la aplicación
+// Configuración global de la aplicación
 const CONFIG = {
     API_BASE_URL: 'http://localhost:3100/api',
     APP_NAME: 'GolApp',
@@ -298,13 +298,6 @@ const Auth = {
         localStorage.setItem(CONFIG.AUTH.USER_KEY, JSON.stringify(user));
     },
     
-    // Cerrar sesión
-    logout: () => {
-        localStorage.removeItem(CONFIG.AUTH.TOKEN_KEY);
-        localStorage.removeItem(CONFIG.AUTH.USER_KEY);
-        window.location.href = 'login.html';
-    },
-    
     // Verificar y redirigir si no está autenticado
     requireAuth: () => {
         if (!Auth.isAuthenticated()) {
@@ -317,26 +310,32 @@ const Auth = {
     // Login
     login: async (email, password) => {
         try {
-            const response = await fetch(`${CONFIG.API_BASE_URL}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email, password })
-            });
+            const response = await API.post('/usuarios/login', { email, password });
             
-            if (!response.ok) {
-                throw new Error('Credenciales inválidas');
+            if (response.success) {
+                Auth.saveSession(response.data.token || 'temp_token', response.data.usuario);
+                return { success: true, user: response.data.usuario };
+            } else {
+                return { success: false, error: response.error || 'Error de autenticación' };
             }
-            
-            const data = await response.json();
-            Auth.saveSession(data.token, data.user);
-            Utils.showToast('Inicio de sesión exitoso', 'success');
-            return data;
         } catch (error) {
-            console.error('Login Error:', error);
-            Utils.showToast(error.message || 'Error al iniciar sesión', 'error');
-            throw error;
+            console.error('Error en login:', error);
+            return { success: false, error: 'Error de conexión' };
+        }
+    },
+
+    // Logout mejorado
+    logout: async () => {
+        try {
+            // Llamar al endpoint de logout del backend
+            await API.post('/usuarios/logout', {});
+        } catch (error) {
+            console.error('Error en logout:', error);
+        } finally {
+            // Limpiar sesión local independientemente del resultado
+            localStorage.removeItem(CONFIG.AUTH.TOKEN_KEY);
+            localStorage.removeItem(CONFIG.AUTH.USER_KEY);
+            window.location.href = 'login.html';
         }
     }
 };

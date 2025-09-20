@@ -8,8 +8,11 @@ const usuariosController = require('../controllers/usuarios.controller');
 // Ruta para registrar un nuevo usuario
 router.post('/', usuariosController.create);
 
-// NUEVA RUTA: Ruta para iniciar sesión
+// Ruta para iniciar sesión
 router.post('/login', usuariosController.login);
+
+// Ruta para cerrar sesión
+router.post('/logout', usuariosController.logout);
 
 // Obtener todos los usuarios
 router.get('/', usuariosController.findAll);

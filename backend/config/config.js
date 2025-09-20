@@ -1,30 +1,30 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 
 module.exports = {
   development: {
-    username: 'root',
-    password: '',
-    database: 'golapp_db',
-    host: 'localhost',
-    port: 3306,
+    username: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'golapp_db',
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
     logging: console.log
   },
   test: {
-    username: 'root',
-    password: '',
+    username: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
     database: 'golapp_db_test',
-    host: 'localhost',
-    port: 3306,
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
     logging: false
   },
   production: {
-    username: 'root',
-    password: '',
+    username: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
     database: 'golapp_db_prod',
-    host: 'localhost',
-    port: 3306,
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
     logging: false
   }

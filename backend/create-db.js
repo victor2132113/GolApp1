@@ -1,13 +1,13 @@
-﻿const { Sequelize } = require('sequelize');
+const { Sequelize } = require('sequelize');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
 async function createDatabase() {
   // Conexión sin especificar base de datos para crearla
-  const sequelize = new Sequelize('', 'root', '', {
-    host: 'localhost',
-    port: 3306,
+  const sequelize = new Sequelize('', process.env.DB_USER || 'root', process.env.DB_PASSWORD || '', {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
     logging: console.log
   });

@@ -78,7 +78,6 @@ exports.delete = async (req, res) => {
   }
 };
 // Autenticar usuario (login)
-
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -93,8 +92,28 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
-    res.status(200).json({ mensaje: 'Inicio de sesión exitoso', usuario });
+    res.status(200).json({ 
+      mensaje: 'Inicio de sesión exitoso', 
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        correo: usuario.correo,
+        rol: usuario.rol,
+        telefono: usuario.telefono
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+};
+
+// Cerrar sesión (logout)
+exports.logout = async (req, res) => {
+  try {
+    // En una implementación con JWT, aquí invalidarías el token
+    // Por ahora, simplemente enviamos una respuesta exitosa
+    res.status(200).json({ mensaje: 'Sesión cerrada exitosamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al cerrar sesión' });
   }
 };
