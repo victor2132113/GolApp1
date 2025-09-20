@@ -108,6 +108,46 @@
             font-weight: 500;
         }
 
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .user-avatar {
+            font-size: 2rem;
+            color: #2E7D32;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.95rem;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            color: #2E7D32;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-email {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
         .user-info {
             display: flex;
             align-items: center;
@@ -432,9 +472,16 @@
             </a>
         </div>
         <div class="nav-right">
-            <span class="user-info">
-                <i class="fas fa-user"></i> <span id="userName">Usuario</span>
-            </span>
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-details">
+                    <div class="user-name" id="userName">Usuario</div>
+                    <div class="user-role" id="userRole">Rol</div>
+                    <div class="user-email" id="userEmail">email@ejemplo.com</div>
+                </div>
+            </div>
             <button class="btn btn-danger" onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i> Salir
             </button>
@@ -593,7 +640,11 @@
                 return;
             }
             currentUser = JSON.parse(user);
-            document.getElementById('userName').textContent = currentUser.nombre || currentUser.email;
+            
+            // Mostrar información completa del usuario
+            document.getElementById('userName').textContent = currentUser.nombre || 'Usuario';
+            document.getElementById('userRole').textContent = currentUser.rol || 'Usuario';
+            document.getElementById('userEmail').textContent = currentUser.email || 'email@ejemplo.com';
         }
 
         // Cargar canchas
