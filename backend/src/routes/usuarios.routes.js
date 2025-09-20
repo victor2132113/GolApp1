@@ -5,6 +5,9 @@ const usuariosController = require('../controllers/usuarios.controller');
 // Nota: La ruta base '/usuarios' se define en el archivo principal de tu servidor.
 // Por eso, aquí solo se usan las rutas secundarias.
 
+// Ruta para buscar usuarios
+router.get('/search', usuariosController.search);
+
 // Ruta para registrar un nuevo usuario
 router.post('/', usuariosController.create);
 

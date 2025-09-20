@@ -477,6 +477,110 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        /* Estilos para el buscador de clientes */
+        .search-container {
+            position: relative;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f7fafc;
+            transition: background-color 0.2s;
+        }
+
+        .search-result-item:hover {
+            background-color: #f7fafc;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .client-name {
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .client-email {
+            font-size: 0.875rem;
+            color: #718096;
+        }
+
+        .selected-client {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background-color: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-radius: 6px;
+        }
+
+        .client-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .client-info span {
+            display: block;
+            font-size: 0.875rem;
+        }
+
+        .client-info span:first-child {
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .client-info span:nth-child(2) {
+            color: #718096;
+        }
+
+        .btn-clear {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .btn-clear:hover {
+            background-color: #fed7d7;
+        }
+
+        .no-results {
+            padding: 0.75rem;
+            text-align: center;
+            color: #718096;
+            font-style: italic;
+        }
+
         .loading {
             text-align: center;
             padding: 2rem;
@@ -818,7 +922,7 @@
                 
                 <div class="form-group">
                     <label for="canchaId">Cancha *</label>
-                    <select id="canchaId" required onchange="updatePriceInfo()">
+                    <select id="canchaId" name="canchaId" required onchange="updatePriceInfo()">
                         <option value="">Seleccionar cancha</option>
                     </select>
                 </div>
@@ -841,27 +945,38 @@
 
                 <div class="form-group">
                     <label for="fecha">Fecha *</label>
-                    <input type="date" id="fecha" required>
+                    <input type="date" id="fecha" name="fecha" required>
                 </div>
 
                 <div class="form-group">
                     <label for="horaInicio">Hora de Inicio *</label>
-                    <input type="time" id="horaInicio" required onchange="calculatePrice()">
+                    <input type="time" id="horaInicio" name="horaInicio" required onchange="calculatePrice()">
                 </div>
 
                 <div class="form-group">
                     <label for="horaFin">Hora de Fin *</label>
-                    <input type="time" id="horaFin" required onchange="calculatePrice()">
+                    <input type="time" id="horaFin" name="horaFin" required onchange="calculatePrice()">
                 </div>
 
                 <div class="form-group">
-                    <label for="clienteNombre">Nombre del Cliente *</label>
-                    <input type="text" id="clienteNombre" required>
+                    <label for="clienteBuscador">Buscar Cliente *</label>
+                    <div class="search-container">
+                        <input type="text" id="clienteBuscador" placeholder="Buscar por nombre o email..." required>
+                        <div id="clienteResultados" class="search-results"></div>
+                    </div>
+                    <div id="clienteSeleccionado" class="selected-client" style="display: none;">
+                        <div class="client-info">
+                            <span id="clienteNombreSeleccionado"></span>
+                            <span id="clienteEmailSeleccionado"></span>
+                            <button type="button" id="limpiarCliente" class="btn-clear">×</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="clienteId" required>
                 </div>
 
                 <div class="form-group">
                     <label for="clienteTelefono">Teléfono del Cliente</label>
-                    <input type="tel" id="clienteTelefono">
+                    <input type="tel" id="clienteTelefono" readonly>
                 </div>
 
                 <div class="form-group">

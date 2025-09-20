@@ -11,7 +11,7 @@ exports.create = async (req, res) => {
   
   try {
     // Validar datos requeridos
-    const { id_cancha, id_usuario, fecha_reserva, hora_inicio, hora_fin, estado } = req.body;
+    const { id_cancha, id_usuario, fecha_reserva, hora_inicio, hora_fin, estado, observaciones, telefono_cliente } = req.body;
     
     if (!id_cancha || !id_usuario || !fecha_reserva || !hora_inicio || !hora_fin) {
       console.error('ERROR: Campos requeridos faltantes');
@@ -43,7 +43,9 @@ exports.create = async (req, res) => {
       fecha_reserva: new Date(fecha_reserva),
       hora_inicio: new Date(hora_inicio),
       hora_fin: new Date(hora_fin),
-      estado: estado || 'confirmada'
+      estado: estado || 'confirmada',
+      observaciones: observaciones || null,
+      telefono_cliente: telefono_cliente || null
     });
     
     console.log('✅ Reserva creada exitosamente:', nuevaReserva.toJSON());

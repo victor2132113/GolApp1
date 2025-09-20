@@ -1,5 +1,31 @@
 const db = require('../../models');
 const Usuario = db.Usuario;
+const { Op } = require('sequelize');
+
+// Buscar usuarios por nombre o email
+exports.search = async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.status(400).json({ error: 'La consulta debe tener al menos 2 caracteres' });
+    }
+
+    const usuarios = await Usuario.findAll({
+      where: {
+        correo: { [Op.like]: `%${q}%` }
+      },
+      attributes: ['id', 'nombre', 'correo', 'telefono'], // Solo campos necesarios
+      limit: 10 // Limitar resultados
+    });
+
+    // Siempre devolver un array, aunque esté vacío
+    res.status(200).json(usuarios);
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).json({ error: 'Error al buscar usuarios' });
+  }
+};
 
 // Crear un nuevo usuario
 exports.create = async (req, res) => {

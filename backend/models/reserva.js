@@ -28,6 +28,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true,
       comment: 'Observaciones adicionales para la reserva'
+    },
+    telefono_cliente: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'Teléfono del cliente para la reserva'
     }
   }, {
     sequelize,
