@@ -24,7 +24,7 @@ app.use(express.json());
 
 // **IMPORTANTE: Configuración de CORS corregida**
 app.use(cors({
-  origin: '*', // Permitir todos los orígenes temporalmente para desarrollo
+  origin: ['http://127.0.0.1:8000', 'http://localhost:8000', 'http://127.0.0.1:3000', 'http://localhost:3000'], // Permitir orígenes específicos
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']

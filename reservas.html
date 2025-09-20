@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GolApp - Reservas</title>
+    <title>Gestión de Reservas - GolApp</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -146,6 +147,73 @@
         .user-email {
             font-size: 0.8rem;
             color: #718096;
+        }
+
+        .price-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .price-label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .price-value {
+            font-weight: 600;
+            color: #28a745;
+            font-size: 1.1em;
+        }
+
+        .price-value.total {
+            color: #007bff;
+            font-size: 1.2em;
+        }
+
+        .price-note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.9em;
+            color: #856404;
+        }
+
+        .price-note i {
+            margin-right: 0.5rem;
+        }
+
+        .logout-arrow {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            margin-left: 8px;
+        }
+
+        .logout-arrow:hover {
+            background: #fed7d7;
+            color: #c53030;
+            transform: scale(1.1);
         }
 
         .user-info {
@@ -481,10 +549,10 @@
                     <div class="user-role" id="userRole">Rol</div>
                     <div class="user-email" id="userEmail">email@ejemplo.com</div>
                 </div>
+                <button class="logout-arrow" onclick="logout()" title="Cerrar Sesión">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
-            <button class="btn btn-danger" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> Salir
-            </button>
         </div>
     </div>
 
@@ -579,9 +647,25 @@
                 
                 <div class="form-group">
                     <label for="canchaId">Cancha *</label>
-                    <select id="canchaId" required>
+                    <select id="canchaId" required onchange="updatePriceInfo()">
                         <option value="">Seleccionar cancha</option>
                     </select>
+                </div>
+
+                <div class="form-group" id="priceInfo" style="display: none;">
+                    <div class="price-display">
+                        <div class="price-item">
+                            <span class="price-label">Precio por hora:</span>
+                            <span class="price-value" id="pricePerHour">$0</span>
+                        </div>
+                        <div class="price-item">
+                            <span class="price-label">Total estimado:</span>
+                            <span class="price-value total" id="totalPrice">$0</span>
+                        </div>
+                        <div class="price-note" id="nightSurchargeNote" style="display: none;">
+                            <i class="fas fa-moon"></i> Recargo nocturno del 20% aplicado después de las 6:00 PM
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -591,12 +675,12 @@
 
                 <div class="form-group">
                     <label for="horaInicio">Hora de Inicio *</label>
-                    <input type="time" id="horaInicio" required>
+                    <input type="time" id="horaInicio" required onchange="calculatePrice()">
                 </div>
 
                 <div class="form-group">
                     <label for="horaFin">Hora de Fin *</label>
-                    <input type="time" id="horaFin" required>
+                    <input type="time" id="horaFin" required onchange="calculatePrice()">
                 </div>
 
                 <div class="form-group">
@@ -626,324 +710,8 @@
         </div>
     </div>
 
-    <script>
-        const API_BASE_URL = 'http://localhost:3100/api';
-        let reservations = [];
-        let canchas = [];
-        let currentUser = null;
-
-        // Verificar autenticación
-        function checkAuth() {
-            const user = localStorage.getItem('user');
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
-            }
-            currentUser = JSON.parse(user);
-            
-            // Mostrar información completa del usuario
-            document.getElementById('userName').textContent = currentUser.nombre || 'Usuario';
-            document.getElementById('userRole').textContent = currentUser.rol || 'Usuario';
-            document.getElementById('userEmail').textContent = currentUser.email || 'email@ejemplo.com';
-        }
-
-        // Cargar canchas
-        async function loadCanchas() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/canchas`);
-                if (response.ok) {
-                    canchas = await response.json();
-                    populateCanchaSelects();
-                }
-            } catch (error) {
-                console.error('Error loading canchas:', error);
-            }
-        }
-
-        // Poblar selects de canchas
-        function populateCanchaSelects() {
-            const selects = ['filterCancha', 'canchaId'];
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                if (selectId === 'filterCancha') {
-                    select.innerHTML = '<option value="">Todas las canchas</option>';
-                } else {
-                    select.innerHTML = '<option value="">Seleccionar cancha</option>';
-                }
-                
-                canchas.forEach(cancha => {
-                    const option = document.createElement('option');
-                    option.value = cancha.id;
-                    option.textContent = `${cancha.nombre} - ${cancha.tipoCancha?.tipo || 'N/A'}`;
-                    select.appendChild(option);
-                });
-            });
-        }
-
-        // Cargar reservas
-        async function loadReservations() {
-            const loading = document.getElementById('loading');
-            const grid = document.getElementById('reservationsGrid');
-            const emptyState = document.getElementById('emptyState');
-
-            loading.style.display = 'block';
-            grid.innerHTML = '';
-            emptyState.style.display = 'none';
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/reservas`);
-                if (response.ok) {
-                    reservations = await response.json();
-                    updateStatsCards();
-                    filterAndDisplayReservations();
-                } else {
-                    throw new Error('Error al cargar reservas');
-                }
-            } catch (error) {
-                console.error('Error loading reservations:', error);
-                grid.innerHTML = '<div style="text-align: center; color: #e53e3e; padding: 2rem;">Error al cargar las reservas</div>';
-            } finally {
-                loading.style.display = 'none';
-            }
-        }
-
-        // Actualizar stats cards
-        function updateStatsCards() {
-            const today = new Date().toISOString().split('T')[0];
-            
-            const totalReservas = reservations.length;
-            const reservasActivas = reservations.filter(r => r.estado === 'activa').length;
-            const reservasCompletadas = reservations.filter(r => r.estado === 'completada').length;
-            const reservasHoy = reservations.filter(r => r.fecha === today).length;
-
-            document.getElementById('totalReservas').textContent = totalReservas;
-            document.getElementById('reservasActivas').textContent = reservasActivas;
-            document.getElementById('reservasCompletadas').textContent = reservasCompletadas;
-            document.getElementById('reservasHoy').textContent = reservasHoy;
-        }
-
-        // Filtrar y mostrar reservas
-        function filterAndDisplayReservations() {
-            const filterDate = document.getElementById('filterDate').value;
-            const filterCancha = document.getElementById('filterCancha').value;
-            const filterStatus = document.getElementById('filterStatus').value;
-
-            let filtered = reservations.filter(reservation => {
-                let matches = true;
-
-                if (filterDate && reservation.fecha !== filterDate) {
-                    matches = false;
-                }
-
-                if (filterCancha && reservation.id_cancha != filterCancha) {
-                    matches = false;
-                }
-
-                if (filterStatus && reservation.estado !== filterStatus) {
-                    matches = false;
-                }
-
-                return matches;
-            });
-
-            displayReservations(filtered);
-        }
-
-        // Mostrar reservas
-        function displayReservations(reservationsToShow) {
-            const grid = document.getElementById('reservationsGrid');
-            const emptyState = document.getElementById('emptyState');
-
-            if (reservationsToShow.length === 0) {
-                grid.innerHTML = '';
-                emptyState.style.display = 'block';
-                return;
-            }
-
-            emptyState.style.display = 'none';
-            grid.innerHTML = reservationsToShow.map(reservation => {
-                const cancha = canchas.find(c => c.id == reservation.id_cancha);
-                const statusClass = `status-${reservation.estado || 'active'}`;
-                const statusText = {
-                    'activa': 'Activa',
-                    'completada': 'Completada',
-                    'cancelada': 'Cancelada'
-                }[reservation.estado] || 'Activa';
-
-                return `
-                    <div class="reservation-card">
-                        <div class="reservation-header">
-                            <div class="reservation-title">
-                                ${reservation.cliente_nombre || 'Cliente'}
-                            </div>
-                            <div class="reservation-status ${statusClass}">
-                                ${statusText}
-                            </div>
-                        </div>
-                        <div class="reservation-details">
-                            <div class="detail-row">
-                                <i class="fas fa-futbol"></i>
-                                <span>${cancha?.nombre || 'Cancha N/A'}</span>
-                            </div>
-                            <div class="detail-row">
-                                <i class="fas fa-calendar"></i>
-                                <span>${formatDate(reservation.fecha)}</span>
-                            </div>
-                            <div class="detail-row">
-                                <i class="fas fa-clock"></i>
-                                <span>${reservation.hora_inicio} - ${reservation.hora_fin}</span>
-                            </div>
-                            <div class="detail-row">
-                                <i class="fas fa-phone"></i>
-                                <span>${reservation.cliente_telefono || 'N/A'}</span>
-                            </div>
-                            ${reservation.observaciones ? `
-                            <div class="detail-row">
-                                <i class="fas fa-comment"></i>
-                                <span>${reservation.observaciones}</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                        <div class="reservation-actions">
-                            <button class="btn btn-primary" onclick="editReservation(${reservation.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-danger" onclick="deleteReservation(${reservation.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Formatear fecha
-        function formatDate(dateString) {
-            const date = new Date(dateString + 'T00:00:00');
-            return date.toLocaleDateString('es-ES', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
-
-        // Abrir modal para crear
-        function openCreateModal() {
-            document.getElementById('modalTitle').textContent = 'Nueva Reserva';
-            document.getElementById('reservationForm').reset();
-            document.getElementById('reservationId').value = '';
-            document.getElementById('reservationModal').classList.add('show');
-        }
-
-        // Editar reserva
-        function editReservation(id) {
-            const reservation = reservations.find(r => r.id === id);
-            if (!reservation) return;
-
-            document.getElementById('modalTitle').textContent = 'Editar Reserva';
-            document.getElementById('reservationId').value = reservation.id;
-            document.getElementById('canchaId').value = reservation.id_cancha;
-            document.getElementById('fecha').value = reservation.fecha;
-            document.getElementById('horaInicio').value = reservation.hora_inicio;
-            document.getElementById('horaFin').value = reservation.hora_fin;
-            document.getElementById('clienteNombre').value = reservation.cliente_nombre || '';
-            document.getElementById('clienteTelefono').value = reservation.cliente_telefono || '';
-            document.getElementById('observaciones').value = reservation.observaciones || '';
-            
-            document.getElementById('reservationModal').classList.add('show');
-        }
-
-        // Eliminar reserva
-        async function deleteReservation(id) {
-            if (!confirm('¿Estás seguro de que quieres eliminar esta reserva?')) return;
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/reservas/${id}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    await loadReservations();
-                } else {
-                    alert('Error al eliminar la reserva');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error de conexión');
-            }
-        }
-
-        // Cerrar modal
-        function closeModal() {
-            document.getElementById('reservationModal').classList.remove('show');
-        }
-
-        // Limpiar filtros
-        function clearFilters() {
-            document.getElementById('filterDate').value = '';
-            document.getElementById('filterCancha').value = '';
-            document.getElementById('filterStatus').value = '';
-            loadReservations();
-        }
-
-        // Manejar envío del formulario
-        document.getElementById('reservationForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const formData = {
-                id_cancha: document.getElementById('canchaId').value,
-                fecha: document.getElementById('fecha').value,
-                hora_inicio: document.getElementById('horaInicio').value,
-                hora_fin: document.getElementById('horaFin').value,
-                cliente_nombre: document.getElementById('clienteNombre').value,
-                cliente_telefono: document.getElementById('clienteTelefono').value,
-                observaciones: document.getElementById('observaciones').value,
-                id_usuario: currentUser.id,
-                estado: 'activa'
-            };
-
-            const reservationId = document.getElementById('reservationId').value;
-            const isEdit = !!reservationId;
-
-            try {
-                const response = await fetch(
-                    `${API_BASE_URL}/reservas${isEdit ? `/${reservationId}` : ''}`,
-                    {
-                        method: isEdit ? 'PUT' : 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
-                    }
-                );
-
-                if (response.ok) {
-                    closeModal();
-                    await loadReservations();
-                } else {
-                    const error = await response.json();
-                    alert(error.message || 'Error al guardar la reserva');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error de conexión');
-            }
-        });
-
-        // Logout
-        function logout() {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            window.location.href = 'login.html';
-        }
-
-        // Inicializar
-        window.addEventListener('load', () => {
-            checkAuth();
-            loadCanchas();
-            loadReservations();
-        });
-    </script>
+    <script src="config.js"></script>
+    <script src="api-service.js"></script>
+    <script src="reservas.js"></script>
 </body>
 </html>
