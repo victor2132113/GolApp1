@@ -1,4 +1,4 @@
-﻿// Datos simulados de canchas
+// Datos simulados de canchas
 const fieldsData = [
     {
         id: '1',
@@ -146,7 +146,7 @@ function navigateTo(section) {
                 alert('Navegando a Tipos de Cancha...\n\nEsta sección permitiría:\n Gestionar tipos de cancha\n Configurar precios por tipo\n Definir características');
                 break;
             case 'implementos':
-                alert('Navegando a Implementos...\n\nEsta sección permitiría:\n Gestionar equipamiento\n Control de inventario\n Préstamos de implementos');
+                window.location.href = 'implementos.html';
                 break;
             default:
                 alert('Sección no encontrada');

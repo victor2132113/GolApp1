@@ -2,19 +2,24 @@ const express = require('express');
 const router = express.Router();
 const productosController = require('../controllers/productos.controller');
 
-// Crear un nuevo producto
-router.post('/', productosController.create);
+// Rutas para implementos deportivos
 
-// Obtener todos los productos
+// GET /api/productos/stats - Obtener estadísticas de implementos (debe ir antes de /:id)
+router.get('/stats', productosController.getStats);
+
+// GET /api/productos - Obtener todos los implementos
 router.get('/', productosController.findAll);
 
-// Obtener un solo producto por su ID
+// GET /api/productos/:id - Obtener un implemento por ID
 router.get('/:id', productosController.findOne);
 
-// Actualizar un producto
+// POST /api/productos - Crear un nuevo implemento
+router.post('/', productosController.create);
+
+// PUT /api/productos/:id - Actualizar un implemento
 router.put('/:id', productosController.update);
 
-// Eliminar un producto
+// DELETE /api/productos/:id - Eliminar un implemento
 router.delete('/:id', productosController.delete);
 
 module.exports = router;

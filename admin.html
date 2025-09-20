@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administrador - GolApp</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Estilos específicos para el panel de administrador */
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(33, 150, 243, 0.3);
+        }
+
+        .header-section h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .header-section p {
+            margin: 10px 0 0 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .navigation-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px 0;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #f5f5f5;
+            color: #333;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: 1px solid #ddd;
+        }
+
+        .back-button:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .admin-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .admin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            border-color: #2196F3;
+        }
+
+        .admin-card .icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .admin-card.implementos .icon {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .admin-card.reservas .icon {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+        }
+
+        .admin-card.usuarios .icon {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+        }
+
+        .admin-card.canchas .icon {
+            background: linear-gradient(135deg, #00BCD4, #0097A7);
+        }
+
+        .admin-card.reportes .icon {
+            background: linear-gradient(135deg, #607D8B, #455A64);
+        }
+
+        .admin-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.4rem;
+            color: #333;
+        }
+
+        .admin-card p {
+            margin: 0;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .admin-card .stats {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .quick-actions {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+
+        .quick-actions h3 {
+            margin: 0 0 20px 0;
+            color: #333;
+            font-size: 1.3rem;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .action-btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+
+        .action-btn.success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .action-btn.warning {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 15px;
+            }
+
+            .header-section h1 {
+                font-size: 2rem;
+            }
+
+            .navigation-bar {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Header -->
+        <div class="header-section">
+            <h1><i class="fas fa-cog"></i> Panel de Administrador</h1>
+            <p>Centro de control y gestión del sistema GolApp</p>
+        </div>
+
+        <!-- Navigation Bar -->
+        <div class="navigation-bar">
+            <a href="implementos.html" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+                Volver a Implementos
+            </a>
+            <div class="admin-info">
+                <span><i class="fas fa-user-shield"></i> Administrador del Sistema</span>
+            </div>
+        </div>
+
+        <!-- Admin Cards Grid -->
+        <div class="admin-grid">
+            <div class="admin-card implementos" onclick="goToSection('implementos.html')">
+                <div class="icon">
+                    <i class="fas fa-futbol"></i>
+                </div>
+                <h3>Gestión de Implementos</h3>
+                <p>Administra el inventario de implementos deportivos, controla stock y préstamos.</p>
+                <div class="stats">
+                    <i class="fas fa-chart-line"></i> Módulo activo
+                </div>
+            </div>
+
+            <div class="admin-card reservas" onclick="goToSection('reservas.html')">
+                <div class="icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h3>Gestión de Reservas</h3>
+                <p>Controla las reservas de canchas, horarios y disponibilidad.</p>
+                <div class="stats">
+                    <i class="fas fa-clock"></i> Próximamente
+                </div>
+            </div>
+
+            <div class="admin-card usuarios" onclick="goToSection('usuarios.html')">
+                <div class="icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Gestión de Usuarios</h3>
+                <p>Administra usuarios, permisos y roles del sistema.</p>
+                <div class="stats">
+                    <i class="fas fa-user-plus"></i> Próximamente
+                </div>
+            </div>
+
+            <div class="admin-card canchas" onclick="goToSection('canchas.html')">
+                <div class="icon">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <h3>Gestión de Canchas</h3>
+                <p>Configura canchas, tipos, tarifas y mantenimiento.</p>
+                <div class="stats">
+                    <i class="fas fa-tools"></i> Próximamente
+                </div>
+            </div>
+
+            <div class="admin-card reportes" onclick="goToSection('reportes.html')">
+                <div class="icon">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <h3>Reportes y Estadísticas</h3>
+                <p>Genera reportes detallados y analiza estadísticas del sistema.</p>
+                <div class="stats">
+                    <i class="fas fa-file-alt"></i> Próximamente
+                </div>
+            </div>
+
+            <div class="admin-card" onclick="goToSection('index.html')">
+                <div class="icon" style="background: linear-gradient(135deg, #E91E63, #C2185B);">
+                    <i class="fas fa-home"></i>
+                </div>
+                <h3>Dashboard Principal</h3>
+                <p>Vuelve al panel principal con resumen general del sistema.</p>
+                <div class="stats">
+                    <i class="fas fa-tachometer-alt"></i> Disponible
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h3><i class="fas fa-bolt"></i> Acciones Rápidas</h3>
+            <div class="actions-grid">
+                <a href="implementos.html" class="action-btn success">
+                    <i class="fas fa-plus"></i>
+                    Nuevo Implemento
+                </a>
+                <a href="reservas.html" class="action-btn primary">
+                    <i class="fas fa-calendar-plus"></i>
+                    Nueva Reserva
+                </a>
+                <a href="usuarios.html" class="action-btn warning">
+                    <i class="fas fa-user-plus"></i>
+                    Nuevo Usuario
+                </a>
+                <a href="reportes.html" class="action-btn primary">
+                    <i class="fas fa-download"></i>
+                    Generar Reporte
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Función para navegar a diferentes secciones
+        function goToSection(url) {
+            window.location.href = url;
+        }
+
+        // Función para mostrar información adicional
+        function showInfo(section) {
+            alert(`Navegando a la sección: ${section}`);
+        }
+
+        // Agregar efecto de carga
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.admin-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

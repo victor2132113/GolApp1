@@ -84,26 +84,39 @@ exports.login = async (req, res) => {
     const usuario = await Usuario.findOne({ where: { correo: email } });
 
     if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+      return res.status(200).json({ 
+        success: false, 
+        error: 'Usuario no encontrado' 
+      });
     }
 
     // TODO: Implementar la comparación de contraseñas de forma segura (ej: con bcrypt)
     if (usuario.contrasena !== password) {
-      return res.status(401).json({ error: 'Contraseña incorrecta' });
+      return res.status(200).json({ 
+        success: false, 
+        error: 'Contraseña incorrecta' 
+      });
     }
 
     res.status(200).json({ 
-      mensaje: 'Inicio de sesión exitoso', 
-      usuario: {
-        id: usuario.id,
-        nombre: usuario.nombre,
-        correo: usuario.correo,
-        rol: usuario.rol,
-        telefono: usuario.telefono
+      success: true,
+      data: {
+        token: 'temp_token_' + Date.now(), // Token temporal para desarrollo
+        usuario: {
+          id: usuario.id,
+          nombre: usuario.nombre,
+          correo: usuario.correo,
+          rol: usuario.rol,
+          telefono: usuario.telefono
+        }
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Error al iniciar sesión' });
+    console.error('Error en login:', error);
+    res.status(200).json({ 
+      success: false, 
+      error: 'Error de conexión' 
+    });
   }
 };
 
