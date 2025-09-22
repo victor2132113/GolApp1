@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -469,14 +469,7 @@
                         <option value="">Seleccionar tipo</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="ubicacion">Ubicación</label>
-                    <input type="text" id="ubicacion" class="form-input">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="capacidad">Capacidad</label>
-                    <input type="number" id="capacidad" class="form-input" min="1">
-                </div>
+
                 <div class="form-group">
                     <label class="form-label" for="estado">Estado *</label>
                     <select id="estado" class="form-select" required>
@@ -485,10 +478,7 @@
                         <option value="mantenimiento">Mantenimiento</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="descripcion">Descripción</label>
-                    <textarea id="descripcion" class="form-textarea" placeholder="Descripción de la cancha..."></textarea>
-                </div>
+
                 <div class="form-actions">
                     <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
                     <button type="submit" class="btn-primary">Guardar Cancha</button>
@@ -498,7 +488,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:3100/api';
+
         let canchas = [];
         let tiposCanchas = [];
         let editingCanchaId = null;
@@ -523,7 +513,7 @@
         // Cargar tipos de canchas
         async function loadTiposCanchas() {
             try {
-                const response = await fetch(`${API_BASE_URL}/tipocanchas`);
+                const response = await fetch(`${CONFIG.API_BASE_URL}/tipocanchas`);
                 if (response.ok) {
                     tiposCanchas = await response.json();
                     populateTipoSelects();
@@ -562,7 +552,7 @@
             emptyState.style.display = 'none';
 
             try {
-                const response = await fetch(`${API_BASE_URL}/canchas`);
+                const response = await fetch(`${CONFIG.API_BASE_URL}/canchas`);
                 if (response.ok) {
                     canchas = await response.json();
                     displayCanchas(canchas);
@@ -590,11 +580,11 @@
 
             emptyState.style.display = 'none';
             grid.innerHTML = canchasToShow.map(cancha => {
-                const tipoCancha = tiposCanchas.find(t => t.id === cancha.tipoCancha_id);
+                const tipoCancha = tiposCanchas.find(t => t.id === cancha.id_tipo);
                 return `
                     <div class="cancha-card">
                         <div class="cancha-header">
-                            <h3 class="cancha-name">${cancha.nombre}</h3>
+                            <h3 class="cancha-name">${cancha.nombre_cancha}</h3>
                             <span class="cancha-status status-${cancha.estado}">${cancha.estado}</span>
                         </div>
                         <div class="cancha-info">
@@ -602,20 +592,6 @@
                                 <span class="info-label">Tipo:</span>
                                 <span class="info-value">${tipoCancha ? tipoCancha.nombre : 'N/A'}</span>
                             </div>
-                            <div class="info-row">
-                                <span class="info-label">Ubicación:</span>
-                                <span class="info-value">${cancha.ubicacion || 'No especificada'}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Capacidad:</span>
-                                <span class="info-value">${cancha.capacidad || 'N/A'} personas</span>
-                            </div>
-                            ${cancha.descripcion ? `
-                            <div class="info-row">
-                                <span class="info-label">Descripción:</span>
-                                <span class="info-value">${cancha.descripcion}</span>
-                            </div>
-                            ` : ''}
                         </div>
                         <div class="cancha-actions">
                             <button class="btn-edit" onclick="editCancha(${cancha.id})">Editar</button>
@@ -633,9 +609,8 @@
             const estadoFilter = document.getElementById('estadoFilter').value;
 
             const filtered = canchas.filter(cancha => {
-                const matchesSearch = cancha.nombre.toLowerCase().includes(searchTerm) ||
-                                    (cancha.ubicacion && cancha.ubicacion.toLowerCase().includes(searchTerm));
-                const matchesTipo = !tipoFilter || cancha.tipoCancha_id.toString() === tipoFilter;
+                const matchesSearch = cancha.nombre_cancha.toLowerCase().includes(searchTerm);
+                const matchesTipo = !tipoFilter || cancha.id_tipo.toString() === tipoFilter;
                 const matchesEstado = !estadoFilter || cancha.estado === estadoFilter;
 
                 return matchesSearch && matchesTipo && matchesEstado;
@@ -656,12 +631,9 @@
                 title.textContent = 'Editar Cancha';
                 const cancha = canchas.find(c => c.id === canchaId);
                 if (cancha) {
-                    document.getElementById('nombre').value = cancha.nombre;
-                    document.getElementById('tipoCancha').value = cancha.tipoCancha_id;
-                    document.getElementById('ubicacion').value = cancha.ubicacion || '';
-                    document.getElementById('capacidad').value = cancha.capacidad || '';
+                    document.getElementById('nombre').value = cancha.nombre_cancha;
+                    document.getElementById('tipoCancha').value = cancha.id_tipo;
                     document.getElementById('estado').value = cancha.estado;
-                    document.getElementById('descripcion').value = cancha.descripcion || '';
                 }
             } else {
                 title.textContent = 'Nueva Cancha';
@@ -690,7 +662,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/canchas/${id}`, {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/canchas/${id}`, {
                     method: 'DELETE'
                 });
 
@@ -711,18 +683,15 @@
             e.preventDefault();
 
             const formData = {
-                nombre: document.getElementById('nombre').value,
-                tipoCancha_id: parseInt(document.getElementById('tipoCancha').value),
-                ubicacion: document.getElementById('ubicacion').value,
-                capacidad: document.getElementById('capacidad').value ? parseInt(document.getElementById('capacidad').value) : null,
-                estado: document.getElementById('estado').value,
-                descripcion: document.getElementById('descripcion').value
+                nombre_cancha: document.getElementById('nombre').value,
+                id_tipo: parseInt(document.getElementById('tipoCancha').value),
+                estado: document.getElementById('estado').value
             };
 
             try {
                 const url = editingCanchaId 
-                    ? `${API_BASE_URL}/canchas/${editingCanchaId}`
-                    : `${API_BASE_URL}/canchas`;
+                    ? `${CONFIG.API_BASE_URL}/canchas/${editingCanchaId}`
+                    : `${CONFIG.API_BASE_URL}/canchas`;
                 
                 const method = editingCanchaId ? 'PUT' : 'POST';
 

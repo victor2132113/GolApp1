@@ -137,10 +137,10 @@ function navigateTo(section) {
         
         switch(section) {
             case 'reservas':
-                alert('Navegando a Gestión de Reservas...\n\nEsta sección permitiría:\n Ver todas las reservas\n Crear nuevas reservas\n Modificar reservas existentes\n Cancelar reservas');
+                window.location.href = 'reservas-nuevo.html';
                 break;
             case 'canchas':
-                alert('Navegando a Administración de Canchas...\n\nEsta sección permitiría:\n Ver todas las canchas\n Crear nuevas canchas\n Editar información de canchas\n Activar/desactivar canchas');
+                window.location.href = 'admin-canchas.html';
                 break;
             case 'tipos-cancha':
                 alert('Navegando a Tipos de Cancha...\n\nEsta sección permitiría:\n Gestionar tipos de cancha\n Configurar precios por tipo\n Definir características');
