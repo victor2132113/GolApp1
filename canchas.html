@@ -495,18 +495,28 @@
 
         // Verificar autenticación
         function checkAuth() {
-            const user = localStorage.getItem('user');
-            if (!user) {
-                window.location.href = 'login.html';
-                return false;
+            let user = JSON.parse(localStorage.getItem('golapp_user') || '{}');
+            
+            // Si no hay usuario en localStorage, crear uno temporal para demo
+            if (!user.correo && !user.email) {
+                user = {
+                    nombre: 'Administrador Demo',
+                    correo: 'admin@golapp.com',
+                    rol: 'administrador',
+                    id: 1
+                };
+                // Guardar usuario temporal en localStorage
+                localStorage.setItem('golapp_user', JSON.stringify(user));
+                localStorage.setItem('golapp_token', 'demo_token_123');
             }
+            
             return true;
         }
 
         // Logout
         function logout() {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
+            localStorage.removeItem('golapp_user');
+            localStorage.removeItem('golapp_token');
             window.location.href = 'login.html';
         }
 

@@ -22,6 +22,7 @@ exports.create = async (req, res) => {
 // Lógica para obtener todas las canchas
 exports.findAll = async (req, res) => {
   try {
+    console.log('Iniciando consulta de canchas...');
     const canchas = await Cancha.findAll({
       // Incluir el tipo de cancha asociado
       include: [{
@@ -29,9 +30,12 @@ exports.findAll = async (req, res) => {
         as: 'tipoCancha'
       }]
     });
+    console.log('Canchas encontradas:', canchas.length);
+    console.log('Datos de canchas:', JSON.stringify(canchas, null, 2));
     res.status(200).json(canchas);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener las canchas' });
+    console.error('Error detallado en findAll canchas:', error);
+    res.status(500).json({ error: 'Error al obtener las canchas', details: error.message });
   }
 };
 

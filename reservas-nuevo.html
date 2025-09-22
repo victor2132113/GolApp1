@@ -33,6 +33,33 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-50%) translateX(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
         .header h1 {
@@ -264,6 +291,35 @@
             opacity: 0.5;
         }
 
+        .back-to-dashboard {
+            text-align: center;
+            padding: 30px;
+            border-top: 2px solid #e9ecef;
+            background: #f8f9fa;
+        }
+
+        .btn-back {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn-back:hover {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -353,6 +409,14 @@
                     </div>
                 </div>
             </div>
+        </div>
+        
+        <!-- Botón de regresar al dashboard -->
+        <div class="back-to-dashboard">
+            <button onclick="regresarDashboard()" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                Regresar al Dashboard
+            </button>
         </div>
     </div>
 
@@ -665,6 +729,10 @@
                 month: 'long',
                 day: 'numeric'
             });
+        }
+
+        function regresarDashboard() {
+            window.location.href = 'index.html';
         }
     </script>
 </body>

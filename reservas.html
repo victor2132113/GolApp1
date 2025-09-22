@@ -775,13 +775,23 @@
 
         // Verificar autenticación
         function checkAuth() {
-            const user = localStorage.getItem('user');
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
+            let user = JSON.parse(localStorage.getItem('golapp_user') || '{}');
+            
+            // Si no hay usuario en localStorage, crear uno temporal para demo
+            if (!user.correo && !user.email) {
+                user = {
+                    nombre: 'Administrador Demo',
+                    correo: 'admin@golapp.com',
+                    rol: 'administrador',
+                    id: 1
+                };
+                // Guardar usuario temporal en localStorage
+                localStorage.setItem('golapp_user', JSON.stringify(user));
+                localStorage.setItem('golapp_token', 'demo_token_123');
             }
-            currentUser = JSON.parse(user);
-            document.getElementById('userName').textContent = currentUser.nombre || currentUser.email;
+            
+            currentUser = user;
+            document.getElementById('userName').textContent = currentUser.nombre || currentUser.email || currentUser.correo;
         }
 
         // Cargar canchas con manejo de errores mejorado
