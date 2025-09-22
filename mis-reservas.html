@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GolApp - Mis Reservas</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .client-header {
+            background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .reservas-container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title h1 {
+            color: #2d5a27;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-title p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .filter-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            background: white;
+            border: 2px solid #e0e0e0;
+            color: #666;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(135deg, #4a7c59, #2d5a27);
+            color: white;
+            border-color: #4a7c59;
+        }
+
+        .reservas-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .reserva-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 5px solid #4a7c59;
+        }
+
+        .reserva-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .reserva-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .reserva-info h3 {
+            color: #2d5a27;
+            margin: 0 0 0.5rem 0;
+            font-size: 1.3rem;
+        }
+
+        .reserva-fecha {
+            color: #666;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .reserva-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-confirmada {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-pendiente {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-cancelada {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-finalizada {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .reserva-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+        }
+
+        .detail-item i {
+            color: #4a7c59;
+            width: 16px;
+        }
+
+        .reserva-precio {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2d5a27;
+            text-align: right;
+            margin-top: 1rem;
+        }
+
+        .reserva-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-cancel {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+
+        .btn-modify {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-modify:hover {
+            background: #e0a800;
+            transform: translateY(-1px);
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4a7c59;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-reservas {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .no-reservas i {
+            font-size: 4rem;
+            color: #ccc;
+            margin-bottom: 1rem;
+        }
+
+        .nueva-reserva-btn {
+            background: linear-gradient(135deg, #4a7c59, #2d5a27);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .nueva-reserva-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 124, 89, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .reserva-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .reserva-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .reserva-actions {
+                justify-content: center;
+            }
+        }
+
+        /* Nuevos estilos para las mejoras */
+        .stats-container {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card i {
+            font-size: 2rem;
+            color: #4a7c59;
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2d5a27;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .search-controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .search-bar {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-bar i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #4a7c59;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .date-filters {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .date-filters input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .date-filters span {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        #sortBy {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .toggle-stats-btn {
+            background: linear-gradient(135deg, #4a7c59, #2d5a27);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-stats-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 124, 89, 0.3);
+        }
+
+        .results-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .pagination-info {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Mejoras en las tarjetas de reserva */
+        .reserva-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reserva-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: #4a7c59;
+            transition: width 0.3s ease;
+        }
+
+        .reserva-card:hover::before {
+            width: 8px;
+        }
+
+        .reserva-observaciones {
+            margin-top: 1rem;
+            padding: 0.8rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #4a7c59;
+        }
+
+        .reserva-observaciones h4 {
+            margin: 0 0 0.5rem 0;
+            color: #2d5a27;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .reserva-observaciones p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .date-filters {
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="client-header">
+        <h1><i class="fas fa-history"></i> Mis Reservas</h1>
+        <a href="cliente.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </header>
+
+    <!-- Main Content -->
+    <main class="reservas-container">
+        <div class="page-title">
+            <h1>Historial de Reservas</h1>
+            <p>Gestiona todas tus reservas de canchas</p>
+        </div>
+
+        <!-- Estadísticas -->
+        <div id="statsContainer" class="stats-container" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-calendar-check"></i>
+                    <div class="stat-info">
+                        <span class="stat-number" id="totalReservas">0</span>
+                        <span class="stat-label">Total Reservas</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="stat-info">
+                        <span class="stat-number" id="reservasConfirmadas">0</span>
+                        <span class="stat-label">Confirmadas</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-dollar-sign"></i>
+                    <div class="stat-info">
+                        <span class="stat-number" id="totalGastado">$0</span>
+                        <span class="stat-label">Total Gastado</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-futbol"></i>
+                    <div class="stat-info">
+                        <span class="stat-number" id="canchaFavorita">-</span>
+                        <span class="stat-label">Cancha Favorita</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controles de búsqueda y filtros -->
+        <div class="search-controls">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Buscar por cancha, fecha o ubicación..." onkeyup="handleSearch()">
+            </div>
+            
+            <div class="filter-controls">
+                <div class="date-filters">
+                    <input type="date" id="fechaDesde" onchange="applyFilters()">
+                    <span>hasta</span>
+                    <input type="date" id="fechaHasta" onchange="applyFilters()">
+                </div>
+                
+                <select id="sortBy" onchange="applySorting()">
+                    <option value="fecha-desc">Más recientes</option>
+                    <option value="fecha-asc">Más antiguas</option>
+                    <option value="precio-desc">Mayor precio</option>
+                    <option value="precio-asc">Menor precio</option>
+                    <option value="cancha">Por cancha</option>
+                </select>
+                
+                <button class="toggle-stats-btn" onclick="toggleStats()">
+                    <i class="fas fa-chart-bar"></i> Estadísticas
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtros por estado -->
+        <div class="filter-tabs">
+            <div class="filter-tab active" data-filter="todas" onclick="filterReservas('todas')">
+                <i class="fas fa-list"></i> Todas
+            </div>
+            <div class="filter-tab" data-filter="confirmada" onclick="filterReservas('confirmada')">
+                <i class="fas fa-check-circle"></i> Confirmadas
+            </div>
+            <div class="filter-tab" data-filter="pendiente" onclick="filterReservas('pendiente')">
+                <i class="fas fa-clock"></i> Pendientes
+            </div>
+            <div class="filter-tab" data-filter="finalizada" onclick="filterReservas('finalizada')">
+                <i class="fas fa-flag-checkered"></i> Finalizadas
+            </div>
+        </div>
+
+        <!-- Información de resultados -->
+        <div class="results-info">
+            <span id="resultsCount">0 reservas encontradas</span>
+            <div class="pagination-info">
+                <span id="paginationInfo"></span>
+            </div>
+        </div>
+
+        <!-- Grid de Reservas -->
+        <div id="reservasGrid" class="reservas-grid">
+            <!-- Las reservas se cargarán dinámicamente -->
+        </div>
+
+        <!-- No hay reservas -->
+        <div id="noReservas" class="no-reservas" style="display: none;">
+            <i class="fas fa-calendar-times"></i>
+            <h3>No tienes reservas</h3>
+            <p>¡Haz tu primera reserva y comienza a disfrutar de nuestras canchas!</p>
+            <a href="reservar-cliente.html" class="nueva-reserva-btn">
+                <i class="fas fa-plus"></i>
+                Nueva Reserva
+            </a>
+        </div>
+    </main>
+
+    <!-- Modal de Cancelación -->
+    <div id="cancelModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Cancelar Reserva</h2>
+                <span class="close" onclick="closeCancelModal()">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <div id="reservaInfo" class="reserva-info-modal">
+                    <!-- Información de la reserva se carga dinámicamente -->
+                </div>
+                
+                <div class="cancel-info">
+                    <div class="info-section">
+                        <h3><i class="fas fa-info-circle"></i> Proceso de Cancelación</h3>
+                        <p>Para cancelar tu reserva, debes comunicarte directamente con el administrador a través de los siguientes medios:</p>
+                    </div>
+                    
+                    <div class="contact-methods">
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Correo Electrónico</h4>
+                                <p>victorino@golapp.com</p>
+                    <a href="mailto:victorino@golapp.com?subject=Solicitud de Cancelación de Reserva&body=Hola, deseo cancelar mi reserva con los siguientes detalles:%0D%0A%0D%0AFecha:%0D%0AHora:%0D%0ACancha:%0D%0A%0D%0AGracias." 
+                                   class="contact-btn email-btn">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Enviar Email
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Teléfono</h4>
+                                <p>+57 300 123 4567</p>
+                                <a href="tel:+573001234567" class="contact-btn phone-btn">
+                                    <i class="fas fa-phone-alt"></i>
+                                    Llamar Ahora
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="important-note">
+                        <i class="fas fa-clock"></i>
+                        <strong>Importante:</strong> Las cancelaciones deben realizarse con al menos 2 horas de anticipación para evitar cargos adicionales.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeCancelModal()">
+                    <i class="fas fa-times"></i>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let reservasData = [];
+        let filteredReservas = [];
+        let currentFilter = 'todas';
+        let currentSort = 'fecha-desc';
+        let searchTerm = '';
+        let dateFrom = '';
+        let dateTo = '';
+
+        // Verificar autenticación al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAuth()) return;
+            loadReservas();
+            initializeDateFilters();
+        });
+
+        function checkAuth() {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            const user = Auth.getCurrentUser();
+            if (user && (user.rol === 'administrador' || user.rol === 'admin')) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            
+            return true;
+        }
+
+        function initializeDateFilters() {
+            const today = new Date();
+            const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate());
+            
+            document.getElementById('fechaHasta').value = today.toISOString().split('T')[0];
+            document.getElementById('fechaDesde').value = threeMonthsAgo.toISOString().split('T')[0];
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        async function loadReservas() {
+            showLoading();
+            
+            try {
+                // Obtener el usuario actual logueado
+                const currentUser = Auth.getCurrentUser();
+                if (!currentUser || !currentUser.id) {
+                    console.error('No se pudo obtener el usuario actual');
+                    showNoReservas();
+                    return;
+                }
+                
+                console.log('Usuario actual:', currentUser);
+                
+                // Usar la ruta correcta de la API para obtener las reservas del usuario específico
+                const response = await fetch(`${CONFIG.API_BASE_URL}/reservas/usuario/${currentUser.id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Datos recibidos de la API:', data);
+                    
+                    // Mapear los datos de la API al formato esperado por el frontend
+                    reservasData = data.map(reserva => {
+                        console.log('Procesando reserva:', reserva);
+                        
+                        // Validar y formatear fecha
+                        let fechaFormateada = 'N/A';
+                        if (reserva.fecha_reserva) {
+                            try {
+                                fechaFormateada = new Date(reserva.fecha_reserva).toLocaleDateString('es-ES', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit'
+                                });
+                            } catch (e) {
+                                console.warn('Error al formatear fecha:', reserva.fecha_reserva);
+                                fechaFormateada = reserva.fecha_reserva;
+                            }
+                        }
+                        
+                        // Formatear horas - los datos vienen como TIME (HH:MM:SS)
+                        let horaInicioFormateada = 'N/A';
+                        let horaFinFormateada = 'N/A';
+                        
+                        if (reserva.hora_inicio) {
+                            try {
+                                // Si viene como TIME string (HH:MM:SS), extraer solo HH:MM
+                                if (typeof reserva.hora_inicio === 'string' && reserva.hora_inicio.includes(':')) {
+                                    horaInicioFormateada = reserva.hora_inicio.substring(0, 5);
+                                } else {
+                                    horaInicioFormateada = new Date(reserva.hora_inicio).toLocaleTimeString('es-CO', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit',
+                                        hour12: false 
+                                    });
+                                }
+                            } catch (e) {
+                                console.warn('Error al formatear hora inicio:', reserva.hora_inicio);
+                                horaInicioFormateada = reserva.hora_inicio;
+                            }
+                        }
+                        
+                        if (reserva.hora_fin) {
+                            try {
+                                // Si viene como TIME string (HH:MM:SS), extraer solo HH:MM
+                                if (typeof reserva.hora_fin === 'string' && reserva.hora_fin.includes(':')) {
+                                    horaFinFormateada = reserva.hora_fin.substring(0, 5);
+                                } else {
+                                    horaFinFormateada = new Date(reserva.hora_fin).toLocaleTimeString('es-CO', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit',
+                                        hour12: false 
+                                    });
+                                }
+                            } catch (e) {
+                                console.warn('Error al formatear hora fin:', reserva.hora_fin);
+                                horaFinFormateada = reserva.hora_fin;
+                            }
+                        }
+                        
+                        // Calcular duración
+                        let duracion = 2; // valor por defecto
+                        if (reserva.hora_inicio && reserva.hora_fin) {
+                            try {
+                                const [horaI, minI] = reserva.hora_inicio.split(':').map(Number);
+                                const [horaF, minF] = reserva.hora_fin.split(':').map(Number);
+                                const inicioMinutos = horaI * 60 + minI;
+                                let finMinutos = horaF * 60 + minF;
+                                
+                                // Manejar caso de medianoche (00:00)
+                                if (finMinutos === 0) finMinutos = 24 * 60;
+                                
+                                duracion = Math.round((finMinutos - inicioMinutos) / 60);
+                            } catch (e) {
+                                console.warn('Error al calcular duración');
+                            }
+                        }
+                        
+                        return {
+                            id: reserva.id,
+                            cancha_nombre: reserva.cancha?.nombre_cancha || `Cancha ${reserva.id_cancha}`,
+                            cancha_ubicacion: reserva.cancha?.ubicacion || 'Ubicación no disponible',
+                            cancha_id: reserva.id_cancha,
+                            fecha: fechaFormateada,
+                            fecha_reserva: reserva.fecha_reserva, // Mantener fecha original para comparaciones
+                            hora_inicio: horaInicioFormateada,
+                            hora_fin: horaFinFormateada,
+                            duracion: duracion,
+                            estado: reserva.estado,
+                            precio_total: reserva.totalPrice || 50000,
+                            observaciones: reserva.observaciones || '',
+                            telefono_cliente: reserva.telefono_cliente || reserva.customerPhone || '',
+                            usuario_nombre: reserva.usuario?.nombre || reserva.customerName || 'Usuario'
+                        };
+                    });
+                    
+                    console.log('Reservas procesadas:', reservasData);
+                    applyAllFilters();
+                    updateStats();
+                } else {
+                    console.error('Error al cargar reservas:', response.statusText);
+                    Utils.showToast('Error al cargar las reservas desde el servidor', 'error');
+                    showNoReservas();
+                }
+            } catch (error) {
+                console.error('Error al cargar reservas:', error);
+                Utils.showToast('Error de conexión con el servidor', 'error');
+                showNoReservas();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function applyAllFilters() {
+            let filtered = [...reservasData];
+
+            // Filtro por estado
+            if (currentFilter !== 'todas') {
+                filtered = filtered.filter(reserva => reserva.estado === currentFilter);
+            }
+
+            // Filtro por búsqueda
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                filtered = filtered.filter(reserva => 
+                    (reserva.cancha_nombre || `Cancha ${reserva.cancha_id}`).toLowerCase().includes(term) ||
+                    (reserva.cancha_ubicacion || '').toLowerCase().includes(term) ||
+                    (reserva.fecha || '').toLowerCase().includes(term)
+                );
+            }
+
+            // Filtro por fechas - usar fecha_reserva original para comparaciones
+            if (dateFrom) {
+                filtered = filtered.filter(reserva => {
+                    if (reserva.fecha_reserva) {
+                        return new Date(reserva.fecha_reserva) >= new Date(dateFrom);
+                    }
+                    return false;
+                });
+            }
+            if (dateTo) {
+                filtered = filtered.filter(reserva => {
+                    if (reserva.fecha_reserva) {
+                        return new Date(reserva.fecha_reserva) <= new Date(dateTo);
+                    }
+                    return false;
+                });
+            }
+
+            filteredReservas = filtered;
+            applySorting();
+        }
+
+        function applySorting() {
+            const sortBy = document.getElementById('sortBy').value;
+            currentSort = sortBy;
+
+            filteredReservas.sort((a, b) => {
+                switch (sortBy) {
+                    case 'fecha-desc':
+                        // Usar fecha_reserva original para ordenamiento
+                        const fechaA = a.fecha_reserva ? new Date(a.fecha_reserva) : new Date(0);
+                        const fechaB = b.fecha_reserva ? new Date(b.fecha_reserva) : new Date(0);
+                        return fechaB - fechaA;
+                    case 'fecha-asc':
+                        const fechaA2 = a.fecha_reserva ? new Date(a.fecha_reserva) : new Date(0);
+                        const fechaB2 = b.fecha_reserva ? new Date(b.fecha_reserva) : new Date(0);
+                        return fechaA2 - fechaB2;
+                    case 'precio-desc':
+                        return (b.precio_total || (b.duracion * 50000)) - (a.precio_total || (a.duracion * 50000));
+                    case 'precio-asc':
+                        return (a.precio_total || (a.duracion * 50000)) - (b.precio_total || (b.duracion * 50000));
+                    case 'cancha':
+                        return (a.cancha_nombre || `Cancha ${a.cancha_id}`).localeCompare(b.cancha_nombre || `Cancha ${b.cancha_id}`);
+                    default:
+                        return 0;
+                }
+            });
+
+            displayReservas();
+        }
+
+        function displayReservas() {
+            const grid = document.getElementById('reservasGrid');
+            const noReservas = document.getElementById('noReservas');
+            const resultsCount = document.getElementById('resultsCount');
+
+            if (!filteredReservas || filteredReservas.length === 0) {
+                showNoReservas();
+                resultsCount.textContent = '0 reservas encontradas';
+                return;
+            }
+
+            grid.innerHTML = '';
+            noReservas.style.display = 'none';
+            resultsCount.textContent = `${filteredReservas.length} reserva${filteredReservas.length !== 1 ? 's' : ''} encontrada${filteredReservas.length !== 1 ? 's' : ''}`;
+
+            filteredReservas.forEach(reserva => {
+                const reservaCard = createReservaCard(reserva);
+                grid.appendChild(reservaCard);
+            });
+        }
+
+        function createReservaCard(reserva) {
+            const card = document.createElement('div');
+            card.className = 'reserva-card';
+
+            // Usar la fecha ya formateada que viene del mapeo de datos
+            const fechaFormateada = reserva.fecha || 'Fecha no disponible';
+
+            const estado = reserva.estado || 'pendiente';
+            const statusClass = `status-${estado}`;
+            const statusText = {
+                'confirmada': 'Confirmada',
+                'pendiente': 'Pendiente',
+                'cancelada': 'Cancelada',
+                'finalizada': 'Finalizada'
+            }[estado] || 'Pendiente';
+
+            const precio = reserva.precio_total || (reserva.duracion * 50000);
+            const canPendingActions = estado === 'confirmada' || estado === 'pendiente';
+
+            // Mostrar observaciones si existen
+            const observacionesHtml = reserva.observaciones ? `
+                <div class="reserva-observaciones">
+                    <h4><i class="fas fa-sticky-note"></i> Observaciones</h4>
+                    <p>${reserva.observaciones}</p>
+                </div>
+            ` : '';
+
+            card.innerHTML = `
+                <div class="reserva-header">
+                    <div class="reserva-info">
+                        <h3>${reserva.cancha_nombre || `Cancha ${reserva.cancha_id}`}</h3>
+                        <div class="reserva-fecha">
+                            <i class="fas fa-calendar"></i>
+                            ${fechaFormateada}
+                        </div>
+                    </div>
+                    <div class="reserva-status ${statusClass}">
+                        ${statusText}
+                    </div>
+                </div>
+                
+                <div class="reserva-details">
+                    <div class="detail-item">
+                        <i class="fas fa-clock"></i>
+                        <span>${reserva.hora_inicio} - ${calcularHoraFin(reserva.hora_inicio, reserva.duracion)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span>${reserva.duracion} hora${reserva.duracion > 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>${reserva.cancha_ubicacion || 'Ubicación no especificada'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-user"></i>
+                        <span>Reservado por: ${Auth.getCurrentUser().nombre}</span>
+                    </div>
+                    ${reserva.telefono_cliente ? `
+                    <div class="detail-item">
+                        <i class="fas fa-phone"></i>
+                        <span>${reserva.telefono_cliente}</span>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                ${observacionesHtml}
+                
+                <div class="reserva-precio">
+                    Total: $${precio.toLocaleString()} COP
+                </div>
+                
+                ${canPendingActions ? `
+                <div class="reserva-actions">
+                    <button class="action-btn btn-cancel" onclick="cancelarReserva(${reserva.id})">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                </div>
+                ` : ''}
+            `;
+
+            return card;
+        }
+
+        function calcularHoraFin(horaInicio, duracion) {
+            const [hora, minuto] = horaInicio.split(':').map(Number);
+            const horaFin = hora + duracion;
+            return `${horaFin.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
+        }
+
+        function filterReservas(filter) {
+            currentFilter = filter;
+            
+            // Actualizar tabs activos
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+            
+            applyAllFilters();
+        }
+
+        function handleSearch() {
+            searchTerm = document.getElementById('searchInput').value;
+            applyAllFilters();
+        }
+
+        function applyFilters() {
+            dateFrom = document.getElementById('fechaDesde').value;
+            dateTo = document.getElementById('fechaHasta').value;
+            applyAllFilters();
+        }
+
+        function updateStats() {
+            const totalReservas = reservasData.length;
+            const reservasConfirmadas = reservasData.filter(r => r.estado === 'confirmada').length;
+            const totalGastado = reservasData.reduce((sum, r) => sum + (r.precio_total || (r.duracion * 50000)), 0);
+            
+            // Calcular cancha favorita
+            const canchaCount = {};
+            reservasData.forEach(r => {
+                const cancha = r.cancha_nombre || `Cancha ${r.cancha_id}`;
+                canchaCount[cancha] = (canchaCount[cancha] || 0) + 1;
+            });
+            
+            const canchaFavorita = Object.keys(canchaCount).reduce((a, b) => 
+                canchaCount[a] > canchaCount[b] ? a : b, '-'
+            );
+
+            document.getElementById('totalReservas').textContent = totalReservas;
+            document.getElementById('reservasConfirmadas').textContent = reservasConfirmadas;
+            document.getElementById('totalGastado').textContent = `$${totalGastado.toLocaleString()}`;
+            document.getElementById('canchaFavorita').textContent = canchaFavorita;
+        }
+
+        function toggleStats() {
+            const statsContainer = document.getElementById('statsContainer');
+            const isVisible = statsContainer.style.display !== 'none';
+            statsContainer.style.display = isVisible ? 'none' : 'block';
+            
+            const btn = document.querySelector('.toggle-stats-btn');
+            btn.innerHTML = isVisible ? 
+                '<i class="fas fa-chart-bar"></i> Mostrar Estadísticas' : 
+                '<i class="fas fa-chart-bar"></i> Ocultar Estadísticas';
+        }
+
+        function showNoReservas() {
+            document.getElementById('reservasGrid').innerHTML = '';
+            document.getElementById('noReservas').style.display = 'block';
+        }
+
+        function cancelarReserva(reservaId) {
+            // Encontrar la reserva para mostrar información específica
+            const reserva = reservasData.find(r => r.id === reservaId);
+            let fechaReserva = '';
+            
+            if (reserva && reserva.fecha_reserva) {
+                try {
+                    fechaReserva = new Date(reserva.fecha_reserva).toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } catch (error) {
+                    console.warn('Error al formatear fecha:', reserva.fecha_reserva);
+                    fechaReserva = reserva.fecha_reserva;
+                }
+            }
+            
+            const horaReserva = reserva ? reserva.hora_inicio : '';
+            const canchaReserva = reserva ? (reserva.cancha_nombre || `Cancha ${reserva.cancha_id}`) : '';
+            
+            showCancelModal(reservaId, fechaReserva, horaReserva, canchaReserva);
+        }
+
+        function showCancelModal(reservaId, fecha, hora, cancha) {
+            const modal = document.getElementById('cancelModal');
+            const reservaInfo = document.getElementById('reservaInfo');
+            
+            reservaInfo.innerHTML = `
+                <strong>Reserva a cancelar:</strong><br>
+                📅 ${fecha}<br>
+                🕐 ${hora}<br>
+                🏟️ ${cancha}
+            `;
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeCancelModal() {
+            document.getElementById('cancelModal').style.display = 'none';
+        }
+
+        // Cerrar modal al hacer clic fuera de él
+        window.onclick = function(event) {
+            const modal = document.getElementById('cancelModal');
+            if (event.target === modal) {
+                closeCancelModal();
+            }
+        }
+    </script>
+</body>
+</html>

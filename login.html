@@ -248,9 +248,15 @@
         </div>
     </div>
 
-    <script src="config.js"></script>
-    <script src="api-service.js"></script>
     <script>
+
+    </script>
+    <script>
+        // Limpiar localStorage al cargar la página de login para evitar problemas
+        console.log('Limpiando localStorage para evitar conflictos...');
+        localStorage.removeItem('golapp_token');
+        localStorage.removeItem('golapp_user');
+        
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -277,9 +283,21 @@
                     successMessage.textContent = '¡Login exitoso! Redirigiendo...';
                     successMessage.style.display = 'block';
                     
-                    // Redirigir al dashboard después de 1 segundo
+                    // Guardar datos del usuario en localStorage
+                    localStorage.setItem('golapp_user', JSON.stringify(result.user));
+                    localStorage.setItem('golapp_token', result.token);
+                    
+                    // Redirigir según el rol del usuario
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        // Acceder al rol del usuario
+                    const userRole = result.user.rol;
+                    console.log('Rol del usuario:', userRole);
+                        
+                        if (userRole === 'administrador' || userRole === 'admin') {
+                            window.location.href = 'index.html';
+                        } else {
+                            window.location.href = 'cliente.html';
+                        }
                     }, 1000);
                 } else {
                     // Error en el login
@@ -297,12 +315,48 @@
             }
         });
 
-        // Verificar si ya está logueado
+        // Verificar si ya está logueado con validación adicional
         window.addEventListener('load', () => {
-            if (Auth.isAuthenticated()) {
-                window.location.href = 'index.html';
+            // Comentar temporalmente la redirección automática para permitir el acceso
+            console.log('Página de login cargada correctamente');
+            /*
+            try {
+                // Verificar que Auth esté disponible
+                if (typeof Auth === 'undefined') {
+                    console.error('Auth no está disponible');
+                    return;
+                }
+                
+                // Verificar autenticación con validación adicional
+                const token = localStorage.getItem('golapp_token');
+                const userStr = localStorage.getItem('golapp_user');
+                
+                console.log('Verificando autenticación:', { token: !!token, user: !!userStr });
+                
+                if (token && userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        if (user && user.id) {
+                            console.log('Usuario autenticado, redirigiendo...');
+                            window.location.href = 'index.html';
+                        } else {
+                            console.log('Datos de usuario inválidos, limpiando localStorage');
+                            localStorage.removeItem('golapp_token');
+                            localStorage.removeItem('golapp_user');
+                        }
+                    } catch (e) {
+                        console.error('Error al parsear usuario:', e);
+                        localStorage.removeItem('golapp_token');
+                        localStorage.removeItem('golapp_user');
+                    }
+                }
+            } catch (error) {
+                console.error('Error en verificación de autenticación:', error);
             }
+            */
         });
     </script>
+    <script src="config.js"></script>
+    <script src="api-service.js"></script>
 </body>
 </html>

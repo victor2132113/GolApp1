@@ -18,8 +18,21 @@ function checkAuth() {
     
     // Mostrar información completa del usuario
     document.getElementById('userName').textContent = currentUser.nombre || 'Usuario';
-    document.getElementById('userRole').textContent = currentUser.rol || 'Usuario';
-    document.getElementById('userEmail').textContent = currentUser.email || 'email@ejemplo.com';
+    
+    // Formatear el rol con emoji
+    const userRole = currentUser.rol || 'usuario';
+    const roleElement = document.getElementById('userRole');
+    if (roleElement) {
+        if (userRole.toLowerCase() === 'administrador' || userRole.toLowerCase() === 'admin') {
+            roleElement.textContent = '👑 Administrador';
+            roleElement.className = 'role-badge admin';
+        } else {
+            roleElement.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+            roleElement.className = 'role-badge';
+        }
+    }
+    
+    document.getElementById('userEmail').textContent = '📧 ' + (currentUser.correo || currentUser.email || 'victorino@golapp.com');
 }
 
 // Función para buscar clientes
@@ -72,16 +85,16 @@ function hideSearchResults() {
     resultsContainer.innerHTML = '';
 }
 
-// Seleccionar cliente
+// Seleccionar cliente - CORREGIDO: No borrar el correo al seleccionar nombre
 function selectClient(id, nombre, email, telefono) {
     selectedClient = { id, nombre, email, telefono };
     
-    // Actualizar campos del formulario
-    document.getElementById('clienteBuscador').value = '';
+    // Actualizar campos del formulario - NO limpiar el buscador
+    document.getElementById('clienteBuscador').value = nombre; // Mostrar solo el nombre en el buscador
     document.getElementById('clienteId').value = id;
     document.getElementById('clienteTelefono').value = telefono || '';
     
-    // Mostrar cliente seleccionado
+    // Mostrar cliente seleccionado con toda la información
     document.getElementById('clienteNombreSeleccionado').textContent = nombre;
     document.getElementById('clienteEmailSeleccionado').textContent = email;
     document.getElementById('clienteSeleccionado').style.display = 'block';
@@ -203,9 +216,9 @@ function calculatePrice() {
     const nightSurchargeNote = document.getElementById('nightSurchargeNote');
     
     if (!canchaSelect.value || !horaInicio || !horaFin) {
-        totalPriceElement.textContent = '$0';
-        nightSurchargeNote.style.display = 'none';
-        return;
+        if (totalPriceElement) totalPriceElement.textContent = '$0';
+        if (nightSurchargeNote) nightSurchargeNote.style.display = 'none';
+        return 0;
     }
     
     const selectedOption = canchaSelect.options[canchaSelect.selectedIndex];
@@ -218,7 +231,7 @@ function calculatePrice() {
     if (fin <= inicio) {
         alert('La hora de fin debe ser posterior a la hora de inicio');
         document.getElementById('horaFin').value = '';
-        return;
+        return 0;
     }
     
     const duracionHoras = (fin - inicio) / (1000 * 60 * 60);
@@ -227,7 +240,7 @@ function calculatePrice() {
     if (duracionHoras > 2) {
         alert('No se pueden reservar más de 2 horas consecutivas');
         document.getElementById('horaFin').value = '';
-        return;
+        return 0;
     }
     
     let precioTotal = precioPorHora * duracionHoras;
@@ -242,8 +255,10 @@ function calculatePrice() {
         hasNightSurcharge = true;
     }
     
-    totalPriceElement.textContent = formatPrice(precioTotal);
-    nightSurchargeNote.style.display = hasNightSurcharge ? 'block' : 'none';
+    if (totalPriceElement) totalPriceElement.textContent = formatPrice(precioTotal);
+    if (nightSurchargeNote) nightSurchargeNote.style.display = hasNightSurcharge ? 'block' : 'none';
+    
+    return precioTotal;
 }
 
 // Función para formatear precio
@@ -253,6 +268,113 @@ function formatPrice(price) {
         currency: 'COP',
         minimumFractionDigits: 0
     }).format(price);
+}
+
+// Función para filtrar horas disponibles según la fecha seleccionada
+function filterAvailableHours() {
+    const fechaInput = document.getElementById('fecha');
+    const horaInicioSelect = document.getElementById('horaInicio');
+    const horaFinSelect = document.getElementById('horaFin');
+    
+    if (!fechaInput || !horaInicioSelect) return;
+    
+    const selectedDate = new Date(fechaInput.value + 'T00:00:00');
+    const today = new Date();
+    const currentHour = today.getHours();
+    
+    // Si la fecha seleccionada es hoy, filtrar horas pasadas
+    const isToday = selectedDate.toDateString() === today.toDateString();
+    
+    // Definir todas las horas disponibles
+    const allHours = [
+        { value: "06:00", text: "6:00 AM", hour: 6 },
+        { value: "07:00", text: "7:00 AM", hour: 7 },
+        { value: "08:00", text: "8:00 AM", hour: 8 },
+        { value: "09:00", text: "9:00 AM", hour: 9 },
+        { value: "10:00", text: "10:00 AM", hour: 10 },
+        { value: "11:00", text: "11:00 AM", hour: 11 },
+        { value: "12:00", text: "12:00 PM", hour: 12 },
+        { value: "13:00", text: "1:00 PM", hour: 13 },
+        { value: "14:00", text: "2:00 PM", hour: 14 },
+        { value: "15:00", text: "3:00 PM", hour: 15 },
+        { value: "16:00", text: "4:00 PM", hour: 16 },
+        { value: "17:00", text: "5:00 PM", hour: 17 },
+        { value: "18:00", text: "6:00 PM", hour: 18 },
+        { value: "19:00", text: "7:00 PM", hour: 19 },
+        { value: "20:00", text: "8:00 PM", hour: 20 },
+        { value: "21:00", text: "9:00 PM", hour: 21 },
+        { value: "22:00", text: "10:00 PM", hour: 22 }
+    ];
+    
+    const endHours = [
+        { value: "07:00", text: "7:00 AM", hour: 7 },
+        { value: "08:00", text: "8:00 AM", hour: 8 },
+        { value: "09:00", text: "9:00 AM", hour: 9 },
+        { value: "10:00", text: "10:00 AM", hour: 10 },
+        { value: "11:00", text: "11:00 AM", hour: 11 },
+        { value: "12:00", text: "12:00 PM", hour: 12 },
+        { value: "13:00", text: "1:00 PM", hour: 13 },
+        { value: "14:00", text: "2:00 PM", hour: 14 },
+        { value: "15:00", text: "3:00 PM", hour: 15 },
+        { value: "16:00", text: "4:00 PM", hour: 16 },
+        { value: "17:00", text: "5:00 PM", hour: 17 },
+        { value: "18:00", text: "6:00 PM", hour: 18 },
+        { value: "19:00", text: "7:00 PM", hour: 19 },
+        { value: "20:00", text: "8:00 PM", hour: 20 },
+        { value: "21:00", text: "9:00 PM", hour: 21 },
+        { value: "22:00", text: "10:00 PM", hour: 22 },
+        { value: "23:00", text: "11:00 PM", hour: 23 }
+    ];
+    
+    // Guardar valores seleccionados
+    const selectedStartHour = horaInicioSelect.value;
+    const selectedEndHour = horaFinSelect ? horaFinSelect.value : '';
+    
+    // Limpiar opciones actuales
+    horaInicioSelect.innerHTML = '<option value="">Selecciona una hora...</option>';
+    if (horaFinSelect) {
+        horaFinSelect.innerHTML = '<option value="">Selecciona la hora final...</option>';
+    }
+    
+    // Filtrar horas de inicio
+    const availableStartHours = isToday ? 
+        allHours.filter(hour => hour.hour > currentHour) : 
+        allHours;
+    
+    // Agregar opciones de hora de inicio
+    availableStartHours.forEach(hour => {
+        const option = document.createElement('option');
+        option.value = hour.value;
+        option.textContent = hour.text;
+        horaInicioSelect.appendChild(option);
+    });
+    
+    // Agregar opciones de hora de fin
+    if (horaFinSelect) {
+        const availableEndHours = isToday ? 
+            endHours.filter(hour => hour.hour > currentHour) : 
+            endHours;
+            
+        availableEndHours.forEach(hour => {
+            const option = document.createElement('option');
+            option.value = hour.value;
+            option.textContent = hour.text;
+            horaFinSelect.appendChild(option);
+        });
+    }
+    
+    // Restaurar valores seleccionados si aún están disponibles
+    if (selectedStartHour && availableStartHours.some(h => h.value === selectedStartHour)) {
+        horaInicioSelect.value = selectedStartHour;
+    }
+    if (selectedEndHour && horaFinSelect) {
+        const availableEndHours = isToday ? 
+            endHours.filter(hour => hour.hour > currentHour) : 
+            endHours;
+        if (availableEndHours.some(h => h.value === selectedEndHour)) {
+            horaFinSelect.value = selectedEndHour;
+        }
+    }
 }
 
 // Cargar reservas
@@ -292,22 +414,6 @@ async function loadReservations() {
             }
             
             reservations = allReservations;
-            console.log('=== DATOS COMPLETOS DE RESERVAS ===');
-            console.log('Total reservas cargadas:', reservations.length);
-            if (dateFilter) {
-                console.log('Filtro de fecha aplicado:', dateFilter);
-            }
-            if (reservations.length > 0) {
-                console.log('Estructura de la primera reserva:', reservations[0]);
-                console.log('Campos disponibles:', Object.keys(reservations[0]));
-                if (reservations[0].cancha) {
-                    console.log('Datos de cancha:', reservations[0].cancha);
-                }
-                if (reservations[0].usuario) {
-                    console.log('Datos de usuario:', reservations[0].usuario);
-                }
-            }
-            console.log('=== FIN DATOS RESERVAS ===');
             updateStats();
             displayReservations();
         } else {
@@ -325,18 +431,48 @@ async function loadReservations() {
 
 // Actualizar estadísticas
 function updateStats() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    
     const todayReservations = reservations.filter(r => {
         const reservationDate = r.fecha_reserva || r.fecha;
-        return reservationDate === today;
+        if (!reservationDate) return false;
+        
+        // Convertir la fecha de la reserva a formato YYYY-MM-DD para comparar
+        let dateToCompare;
+        try {
+            if (typeof reservationDate === 'string') {
+                // Si es string, puede ser YYYY-MM-DD o DD/MM/YYYY
+                if (reservationDate.includes('/')) {
+                    // Formato DD/MM/YYYY
+                    const [day, month, year] = reservationDate.split('/');
+                    dateToCompare = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                } else if (reservationDate.includes('-')) {
+                    // Formato YYYY-MM-DD o similar
+                    dateToCompare = new Date(reservationDate).toISOString().split('T')[0];
+                } else {
+                    return false;
+                }
+            } else {
+                // Si es objeto Date
+                dateToCompare = new Date(reservationDate).toISOString().split('T')[0];
+            }
+            
+            return dateToCompare === todayString;
+        } catch (error) {
+            console.warn('Error al procesar fecha de reserva:', reservationDate, error);
+            return false;
+        }
     });
+    
     const activeReservations = reservations.filter(r => r.estado === 'confirmada');
-    const completedReservations = reservations.filter(r => r.estado === 'completada');
-
-    document.getElementById('totalReservas').textContent = reservations.length;
-    document.getElementById('reservasHoy').textContent = todayReservations.length;
+    const completedReservations = reservations.filter(r => r.estado === 'finalizada');
+    
+    // Actualizar contadores
     document.getElementById('reservasActivas').textContent = activeReservations.length;
     document.getElementById('reservasCompletadas').textContent = completedReservations.length;
+    document.getElementById('totalReservas').textContent = reservations.length;
+    document.getElementById('reservasHoy').textContent = todayReservations.length;
 }
 
 // Mostrar reservas
@@ -453,25 +589,35 @@ function openCreateModal() {
     document.getElementById('reservationId').value = '';
     document.getElementById('priceInfo').style.display = 'none';
     document.getElementById('paymentStatus').style.display = 'none';
+    
+    // Ocultar elementos específicos de edición
+    const estadoGroup = document.getElementById('estadoGroup');
+    
+    if (estadoGroup) {
+        estadoGroup.style.display = 'none';
+    }
+    
     paymentCompleted = false; // Resetear estado de pago
     
     // Limpiar cliente seleccionado al abrir modal para nueva reserva
     clearSelectedClient();
     
     updateSaveButton();
+    
+    // Actualizar información de pago para nueva reserva
+    updatePaymentDisplay();
+    
+    // Filtrar horas disponibles al abrir el modal
+    filterAvailableHours();
+    
     document.getElementById('reservationModal').classList.add('show');
 }
 
 // Funciones para el modal de pago
 function openPaymentModal() {
-    console.log('openPaymentModal called'); // Debug
     const modal = document.getElementById('paymentModal');
-    console.log('Modal element:', modal); // Debug
     if (modal) {
         modal.style.display = 'flex';
-        console.log('Modal display set to flex'); // Debug
-    } else {
-        console.error('Payment modal not found!');
     }
 }
 
@@ -480,32 +626,26 @@ function closePaymentModal() {
 }
 
 function confirmPayment() {
-    console.log('=== CONFIRMANDO PAGO ===');
-    
     // Simular procesamiento de pago
     paymentCompleted = true;
-    console.log('Estado de pago actualizado:', paymentCompleted);
     
     // Mostrar estado de pago completado
     const paymentStatusElement = document.getElementById('paymentStatus');
     if (paymentStatusElement) {
         paymentStatusElement.style.display = 'block';
-        console.log('Elemento paymentStatus mostrado');
-    } else {
-        console.error('ERROR: Elemento paymentStatus no encontrado');
     }
     
     // Actualizar botón de guardar
     updateSaveButton();
-    console.log('Botón de guardar actualizado');
+    
+    // Actualizar visualización del pago (abono en verde)
+    updatePaymentDisplay();
     
     // Cerrar modal de pago
     closePaymentModal();
-    console.log('Modal de pago cerrado');
     
     // Mostrar mensaje de éxito
     Utils.showToast('Pago procesado exitosamente. La reserva quedará pendiente de confirmación.', 'success');
-    console.log('=== PAGO CONFIRMADO EXITOSAMENTE ===');
 }
 
 function updateSaveButton() {
@@ -531,92 +671,42 @@ function updateSaveButton() {
 
 // Editar reserva
 function editReservation(id) {
-    console.log('=== EDITANDO RESERVA ===', id);
     const reservation = reservations.find(r => r.id === id);
     if (!reservation) {
         console.error('Reserva no encontrada:', id);
         return;
     }
 
-    console.log('Datos de la reserva:', reservation);
-
-    // Verificar y establecer elementos del modal
-    const modalTitle = document.getElementById('modalTitle');
-    if (modalTitle) {
-        modalTitle.textContent = 'Editar Reserva';
-    } else {
-        console.error('Elemento modalTitle no encontrado');
-    }
-
-    const reservationIdField = document.getElementById('reservationId');
-    if (reservationIdField) {
-        reservationIdField.value = reservation.id;
-    } else {
-        console.error('Elemento reservationId no encontrado');
-    }
-
-    const canchaIdField = document.getElementById('canchaId');
-    if (canchaIdField) {
-        canchaIdField.value = reservation.id_cancha;
-    } else {
-        console.error('Elemento canchaId no encontrado');
-    }
-
-    const fechaField = document.getElementById('fecha');
-    if (fechaField) {
-        // Formatear la fecha correctamente para el input date
-        const fechaReserva = new Date(reservation.fecha_reserva);
-        const fechaFormateada = fechaReserva.toISOString().split('T')[0];
-        fechaField.value = fechaFormateada;
-        console.log('Fecha establecida:', fechaFormateada);
-    } else {
-        console.error('Elemento fecha no encontrado');
-    }
-
-    const horaInicioField = document.getElementById('horaInicio');
-    if (horaInicioField) {
-        // Formatear la hora correctamente para el input time
-        const horaInicio = new Date(reservation.hora_inicio);
-        const horaFormateada = horaInicio.toTimeString().slice(0, 5);
-        horaInicioField.value = horaFormateada;
-        console.log('Hora inicio establecida:', horaFormateada);
-    } else {
-        console.error('Elemento horaInicio no encontrado');
-    }
-
-    const horaFinField = document.getElementById('horaFin');
-    if (horaFinField) {
-        // Formatear la hora correctamente para el input time
-        const horaFin = new Date(reservation.hora_fin);
-        const horaFormateada = horaFin.toTimeString().slice(0, 5);
-        horaFinField.value = horaFormateada;
-        console.log('Hora fin establecida:', horaFormateada);
-    } else {
-        console.error('Elemento horaFin no encontrado');
-    }
-
-    // El campo precioTotal no existe en el formulario, lo omitimos
-    // document.getElementById('precioTotal').value = reservation.precio_total;
-
-    const observacionesField = document.getElementById('observaciones');
-    if (observacionesField) {
-        observacionesField.value = reservation.observaciones || '';
-    } else {
-        console.error('Elemento observaciones no encontrado');
-    }
+    // Establecer elementos del modal
+    document.getElementById('modalTitle').textContent = 'Editar Reserva';
+    document.getElementById('reservationId').value = reservation.id;
+    document.getElementById('canchaId').value = reservation.id_cancha;
+    
+    // Formatear la fecha correctamente para el input date
+    const fechaReserva = new Date(reservation.fecha_reserva);
+    const fechaFormateada = fechaReserva.toISOString().split('T')[0];
+    document.getElementById('fecha').value = fechaFormateada;
+    
+    // Filtrar horas disponibles para la fecha seleccionada
+    filterAvailableHours();
+    
+    // Establecer horas después de filtrar
+    setTimeout(() => {
+        const horaString = reservation.hora_inicio;
+        const horaFormateada = horaString.substring(0, 5);
+        document.getElementById('horaInicio').value = horaFormateada;
+        
+        const horaFinString = reservation.hora_fin;
+        const horaFinFormateada = horaFinString.substring(0, 5);
+        document.getElementById('horaFin').value = horaFinFormateada;
+    }, 100);
+    
+    document.getElementById('observaciones').value = reservation.observaciones || '';
 
     // Establecer información del cliente si existe
     if (reservation.usuario) {
-        const clienteIdField = document.getElementById('clienteId');
-        if (clienteIdField) {
-            clienteIdField.value = reservation.id_usuario;
-        }
-
-        // Limpiar el campo de búsqueda y ocultar resultados
-        const clienteBuscador = document.getElementById('clienteBuscador');
-        if (clienteBuscador) {
-            clienteBuscador.value = `${reservation.usuario.nombre} - ${reservation.usuario.correo}`;
-        }
+        document.getElementById('clienteId').value = reservation.id_usuario;
+        document.getElementById('clienteBuscador').value = reservation.usuario.nombre;
         hideSearchResults();
 
         // Mostrar información del cliente seleccionado
@@ -627,66 +717,96 @@ function editReservation(id) {
             telefono: reservation.usuario.telefono
         };
 
-        const clienteSeleccionado = document.getElementById('clienteSeleccionado');
-        const clienteNombre = document.getElementById('clienteNombreSeleccionado');
-        const clienteEmail = document.getElementById('clienteEmailSeleccionado');
-        const clienteTelefono = document.getElementById('clienteTelefono');
-
-        if (clienteSeleccionado && clienteNombre && clienteEmail) {
-            clienteSeleccionado.style.display = 'block';
-            clienteNombre.textContent = selectedClient.nombre;
-            clienteEmail.textContent = selectedClient.email;
-        }
-
-        if (clienteTelefono) {
-            clienteTelefono.value = selectedClient.telefono || '';
-        }
-
-        console.log('Cliente autocompletado:', selectedClient);
+        document.getElementById('clienteSeleccionado').style.display = 'block';
+        document.getElementById('clienteNombreSeleccionado').textContent = selectedClient.nombre;
+        document.getElementById('clienteEmailSeleccionado').textContent = selectedClient.email;
+        document.getElementById('clienteTelefono').value = selectedClient.telefono || '';
     }
 
-    const modal = document.getElementById('reservationModal');
-    if (modal) {
-        modal.classList.add('show');
-    } else {
-        console.error('Elemento reservationModal no encontrado');
+    // Mostrar elementos específicos de edición
+    const estadoGroup = document.getElementById('estadoGroup');
+    
+    if (estadoGroup) {
+        estadoGroup.style.display = 'block';
+        const estadoSelect = document.getElementById('estadoReserva');
+        if (estadoSelect) {
+            estadoSelect.value = reservation.estado;
+        }
     }
 
-    console.log('=== MODAL DE EDICIÓN ABIERTO ===');
+    // Actualizar información de pago según el estado
+    updatePaymentDisplay();
+
+    document.getElementById('reservationModal').classList.add('show');
 }
 
 // Cerrar modal
 function closeModal() {
+    // Ocultar elementos específicos de edición al cerrar
+    const estadoGroup = document.getElementById('estadoGroup');
+    
+    if (estadoGroup) {
+        estadoGroup.style.display = 'none';
+    }
+    
     document.getElementById('reservationModal').classList.remove('show');
+}
+
+// Función para actualizar la visualización de pago según el estado - CORREGIDO
+function updatePaymentDisplay() {
+    const estadoSelect = document.getElementById('estadoReserva');
+    const abonoPago = document.getElementById('abonoPago');
+    const pagoRestante = document.getElementById('pagoRestante');
+    const pagoRestanteValue = document.getElementById('pagoRestanteValue');
+    
+    if (!abonoPago || !pagoRestante) {
+        return;
+    }
+    
+    // Calcular precio total y pago restante
+    const precioTotal = calculatePrice();
+    const abono = 15000;
+    const restante = Math.max(0, precioTotal - abono);
+    
+    if (pagoRestanteValue) {
+        pagoRestanteValue.textContent = `$${restante.toLocaleString()} COP`;
+    }
+    
+    // Remover todas las clases de estado
+    abonoPago.classList.remove('confirmada');
+    pagoRestante.classList.remove('confirmada');
+    
+    // Aplicar estilos según el estado
+    if (estadoSelect && (estadoSelect.value === 'confirmada' || estadoSelect.value === 'finalizada')) {
+        // Ambos campos en verde cuando está confirmada o finalizada
+        abonoPago.classList.add('confirmada');
+        pagoRestante.classList.add('confirmada');
+    } else {
+        // Estado pendiente: abono verde SOLO si el pago fue completado
+        if (paymentCompleted) {
+            abonoPago.classList.add('confirmada');
+        }
+        // Pago restante mantiene estilos por defecto (rojo)
+    }
 }
 
 // Guardar reserva
 async function saveReservation() {
-    console.log('=== INICIANDO PROCESO DE GUARDADO DE RESERVA ===');
-    console.log('Estado actual de paymentCompleted:', paymentCompleted);
-    
     // Verificar que el pago haya sido completado para nuevas reservas
     const reservationId = document.getElementById('reservationId').value;
-    console.log('ID de reserva (para edición):', reservationId);
     
     if (!reservationId && !paymentCompleted) {
-        console.log('ERROR: Pago no completado para nueva reserva');
-        console.log('reservationId:', reservationId, 'paymentCompleted:', paymentCompleted);
         Utils.showToast('Debe completar el pago antes de crear la reserva', 'error');
         return;
     }
-    
-    console.log('✅ Validación de pago pasada, continuando...');
 
     // Obtener datos del formulario
     const form = document.getElementById('reservationForm');
     if (!form) {
-        console.error('ERROR: No se encontró el formulario de reserva');
         Utils.showToast('Error: Formulario no encontrado', 'error');
         return;
     }
 
-    console.log('✅ Formulario encontrado, obteniendo datos...');
     const formData = new FormData(form);
     
     // Validar campos requeridos
@@ -695,42 +815,20 @@ async function saveReservation() {
     const horaInicio = formData.get('horaInicio');
     const horaFin = formData.get('horaFin');
     
-    console.log('Datos básicos del formulario:', {
-        canchaId,
-        fecha,
-        horaInicio,
-        horaFin
-    });
-    
     // Validar que se haya seleccionado un cliente
     const clienteId = document.getElementById('clienteId').value;
-    console.log('Cliente seleccionado - ID:', clienteId, 'selectedClient:', selectedClient);
     
     if (!clienteId) {
-        console.error('ERROR: No se ha seleccionado un cliente');
         Utils.showToast('Debe seleccionar un cliente registrado', 'error');
         return;
     }
 
-    console.log('✅ Cliente validado, continuando...');
-
-    console.log('Datos del formulario:', {
-        canchaId,
-        fecha,
-        horaInicio,
-        horaFin,
-        clienteId,
-        selectedClient
-    });
-
     if (!canchaId || !fecha || !horaInicio || !horaFin) {
-        console.error('ERROR: Campos requeridos faltantes');
         Utils.showToast('Por favor complete todos los campos requeridos', 'error');
         return;
     }
 
     if (!currentUser || !currentUser.id) {
-        console.error('ERROR: Usuario no autenticado');
         Utils.showToast('Error: Usuario no autenticado', 'error');
         return;
     }
@@ -741,20 +839,28 @@ async function saveReservation() {
     // Obtener teléfono del cliente seleccionado
     const telefonoCliente = selectedClient?.telefono || document.getElementById('clienteTelefono').value.trim();
 
+    // Obtener estado de la reserva (solo para edición)
+    let estadoReserva = 'pendiente'; // Estado por defecto para nuevas reservas
+    if (reservationId) {
+        const estadoSelect = document.getElementById('estadoReserva');
+        if (estadoSelect && estadoSelect.value) {
+            estadoReserva = estadoSelect.value;
+        }
+    } else if (paymentCompleted) {
+        estadoReserva = 'pendiente'; // Nueva reserva con pago completado
+    }
+
     // Crear objeto de datos con formato correcto para la base de datos
     const reservationData = {
         id_cancha: parseInt(canchaId),
         id_usuario: parseInt(clienteId), // Usar el ID del cliente seleccionado
-        fecha_reserva: new Date(fecha + 'T00:00:00.000Z').toISOString(),
-        hora_inicio: new Date(fecha + 'T' + horaInicio + ':00.000Z').toISOString(),
-        hora_fin: new Date(fecha + 'T' + horaFin + ':00.000Z').toISOString(),
-        estado: (!reservationId && paymentCompleted) ? 'pendiente' : 'confirmada',
+        fecha_reserva: fecha, // Enviar solo la fecha sin conversión a ISO
+        hora_inicio: horaInicio + ':00', // Formato HH:MM:SS
+        hora_fin: horaFin + ':00', // Formato HH:MM:SS
+        estado: estadoReserva,
         observaciones: observaciones || null,
         telefono_cliente: telefonoCliente || null
     };
-
-    console.log('Datos de reserva preparados para envío:', reservationData);
-    console.log('URL del API:', API_BASE_URL);
 
     try {
         let url, method;
@@ -763,15 +869,11 @@ async function saveReservation() {
             // Actualizar reserva existente
             url = `${API_BASE_URL}/reservas/${reservationId}`;
             method = 'PUT';
-            console.log('Actualizando reserva existente:', reservationId);
         } else {
             // Crear nueva reserva
             url = `${API_BASE_URL}/reservas`;
             method = 'POST';
-            console.log('Creando nueva reserva');
         }
-
-        console.log('Enviando petición:', { url, method });
 
         const response = await fetch(url, {
             method: method,
@@ -782,46 +884,32 @@ async function saveReservation() {
             body: JSON.stringify(reservationData)
         });
 
-        console.log('Respuesta recibida:', {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok,
-            headers: Object.fromEntries(response.headers.entries())
-        });
-
         // Intentar leer la respuesta como JSON
         let responseData;
         const responseText = await response.text();
-        console.log('Texto de respuesta crudo:', responseText);
 
         try {
             responseData = JSON.parse(responseText);
         } catch (parseError) {
-            console.error('Error al parsear JSON:', parseError);
             responseData = { error: 'Respuesta del servidor no válida', rawResponse: responseText };
         }
 
         if (response.ok) {
-            console.log('✅ RESERVA GUARDADA EXITOSAMENTE:', responseData);
             closeModal();
             await loadReservations(); // Esperar a que se recarguen las reservas
             Utils.showToast(reservationId ? 'Reserva actualizada exitosamente' : 'Reserva creada exitosamente', 'success');
             // Resetear el estado del pago después de crear la reserva
             paymentCompleted = false;
         } else {
-            console.error('❌ ERROR DEL SERVIDOR:', responseData);
             Utils.showToast(responseData.error || `Error del servidor: ${response.status}`, 'error');
         }
     } catch (error) {
-        console.error('❌ ERROR DE CONEXIÓN:', error);
-        console.error('Stack trace:', error.stack);
+        console.error('Error de conexión:', error);
         Utils.showToast('Error de conexión con el servidor. Verifique su conexión a internet.', 'error');
     }
-
-    console.log('=== FIN DEL PROCESO DE GUARDADO ===');
 }
 
-// Editar reserva
+// Eliminar reserva
 async function deleteReservation(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar esta reserva?')) {
         return;
@@ -834,13 +922,13 @@ async function deleteReservation(id) {
 
         if (response.ok) {
             loadReservations();
-            alert('Reserva eliminada exitosamente');
+            Utils.showToast('Reserva eliminada exitosamente', 'success');
         } else {
-            alert('Error al eliminar la reserva');
+            Utils.showToast('Error al eliminar la reserva', 'error');
         }
     } catch (error) {
         console.error('Error deleting reservation:', error);
-        alert('Error de conexión');
+        Utils.showToast('Error de conexión', 'error');
     }
 }
 
@@ -861,7 +949,7 @@ function filterReservations() {
     if (searchTerm) {
         filteredReservations = filteredReservations.filter(reservation => {
             const cancha = canchas.find(c => c.id === reservation.id_cancha);
-            const canchaName = cancha ? cancha.nombre.toLowerCase() : '';
+            const canchaName = cancha ? (cancha.nombre_cancha || cancha.nombre || '').toLowerCase() : '';
             const userName = reservation.usuario?.nombre?.toLowerCase() || '';
             
             return canchaName.includes(searchTerm) || 
@@ -991,18 +1079,29 @@ window.addEventListener('load', () => {
     checkAuth();
     loadCanchas();
     loadReservations();
-    initializeClientSearch(); // Inicializar el buscador de clientes
+    initializeClientSearch();
+    
+    // Agregar event listener para el cambio de fecha
+    const fechaInput = document.getElementById('fecha');
+    if (fechaInput) {
+        fechaInput.addEventListener('change', filterAvailableHours);
+        // Ejecutar al cargar para filtrar horas iniciales
+        filterAvailableHours();
+    }
+    
+    // Agregar event listener para el checkbox de "pagar por nequi"
+    const pagarPorNequi = document.getElementById('pagarPorNequi');
+    if (pagarPorNequi) {
+        pagarPorNequi.addEventListener('change', updatePaymentDisplay);
+    }
     
     // Configurar el evento submit del formulario
     const reservationForm = document.getElementById('reservationForm');
     if (reservationForm) {
         reservationForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log('=== FORMULARIO ENVIADO ===');
             await saveReservation();
         });
-    } else {
-        console.error('ERROR: No se encontró el formulario reservationForm');
     }
     
     // Configurar event listeners para los filtros
@@ -1012,30 +1111,18 @@ window.addEventListener('load', () => {
     const filterDate = document.getElementById('filterDate');
     
     if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            console.log('Filtro de búsqueda cambiado:', searchInput.value);
-            filterReservations();
-        });
+        searchInput.addEventListener('input', filterReservations);
     }
     
     if (filterStatus) {
-        filterStatus.addEventListener('change', () => {
-            console.log('Filtro de estado cambiado:', filterStatus.value);
-            filterReservations();
-        });
+        filterStatus.addEventListener('change', filterReservations);
     }
     
     if (filterCancha) {
-        filterCancha.addEventListener('change', () => {
-            console.log('Filtro de cancha cambiado:', filterCancha.value);
-            filterReservations();
-        });
+        filterCancha.addEventListener('change', filterReservations);
     }
     
     if (filterDate) {
-        filterDate.addEventListener('change', () => {
-            console.log('Filtro de fecha cambiado:', filterDate.value);
-            filterReservations();
-        });
+        filterDate.addEventListener('change', filterReservations);
     }
 });

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GolApp - Canchas Disponibles</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .client-header {
+            background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .canchas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cancha-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid #e0e0e0;
+        }
+
+        .cancha-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .cancha-image {
+            height: 200px;
+            background: linear-gradient(135deg, #4a7c59 0%, #2d5a27 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            color: white;
+        }
+
+        .cancha-image i {
+            font-size: 4rem;
+            opacity: 0.8;
+        }
+
+        .cancha-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-disponible {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-ocupada {
+            background: #f44336;
+            color: white;
+        }
+
+        .cancha-info {
+            padding: 1.5rem;
+        }
+
+        .cancha-info h3 {
+            margin: 0 0 1rem 0;
+            color: #2d5a27;
+            font-size: 1.3rem;
+        }
+
+        .cancha-details {
+            margin-bottom: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .detail-item i {
+            width: 20px;
+            margin-right: 10px;
+            color: #4a7c59;
+        }
+
+        .cancha-precio {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2d5a27;
+            margin-bottom: 1rem;
+        }
+
+        .reservar-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4a7c59 0%, #2d5a27 100%);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .reservar-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(45, 90, 39, 0.3);
+        }
+
+        .reservar-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a7c59;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-canchas {
+            display: none;
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .no-canchas i {
+            font-size: 4rem;
+            color: #ccc;
+            margin-bottom: 1rem;
+        }
+
+        .contact-section {
+            background: #f8f9fa;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .contact-section h3 {
+            color: #2d5a27;
+            margin-bottom: 1rem;
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+        }
+
+        .contact-item i {
+            color: #4a7c59;
+        }
+    </style>
+</head>
+<body>
+    <header class="client-header">
+        <div>
+            <h1><i class="fas fa-futbol"></i> GolApp - Canchas</h1>
+        </div>
+        <a href="cliente.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Volver al Dashboard
+        </a>
+    </header>
+
+    <main>
+        <div class="loading" id="loading">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>Cargando canchas disponibles...</p>
+            </div>
+        </div>
+
+        <div class="canchas-grid" id="canchasGrid">
+            <!-- Las canchas se cargarán aquí dinámicamente -->
+        </div>
+
+        <div class="no-canchas" id="noCanchas">
+            <i class="fas fa-futbol"></i>
+            <h3>No hay canchas disponibles</h3>
+            <p>En este momento no hay canchas disponibles. Intenta más tarde.</p>
+        </div>
+    </main>
+
+    <footer class="contact-section">
+        <h3>¿Necesitas ayuda?</h3>
+        <div class="contact-info">
+            <div class="contact-item">
+                <i class="fas fa-phone"></i>
+                <span>+57 300 123 4567</span>
+            </div>
+            <div class="contact-item">
+                <i class="fas fa-envelope"></i>
+                <span>victorino@golapp.com</span>
+            </div>
+            <div class="contact-item">
+                <i class="fas fa-clock"></i>
+                <span>Lun - Dom: 6:00 AM - 10:00 PM</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script>
+        // Verificar autenticación al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM cargado, verificando config.js...');
+            
+            // Función para verificar si config.js está cargado
+            function checkConfigLoaded() {
+                console.log('Verificando objetos globales:');
+                console.log('window.CONFIG:', window.CONFIG);
+                console.log('window.Auth:', window.Auth);
+                
+                if (window.Auth && typeof window.Auth.getToken === 'function') {
+                    console.log('Auth.getToken está disponible');
+                    if (!checkAuth()) return;
+                    loadCanchas();
+                } else {
+                    console.log('Auth.getToken no está disponible, reintentando...');
+                    setTimeout(checkConfigLoaded, 100);
+                }
+            }
+            
+            // Iniciar verificación
+            checkConfigLoaded();
+        });
+
+        function checkAuth() {
+            if (!window.Auth || !window.Auth.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            const user = window.Auth.getCurrentUser();
+            if (user && (user.rol === 'administrador' || user.rol === 'admin')) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            
+            return true;
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        async function loadCanchas() {
+            showLoading();
+            
+            try {
+                const token = window.Auth.getToken();
+                const response = await fetch(`${window.CONFIG.API_BASE_URL}/canchas`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const canchas = await response.json();
+                    displayCanchas(canchas);
+                } else {
+                    console.error('Error al cargar canchas:', response.statusText);
+                    showNoCanchas();
+                }
+            } catch (error) {
+                console.error('Error al cargar canchas:', error);
+                showNoCanchas();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displayCanchas(canchas) {
+            const grid = document.getElementById('canchasGrid');
+            const noCanchas = document.getElementById('noCanchas');
+
+            if (!canchas || canchas.length === 0) {
+                showNoCanchas();
+                return;
+            }
+
+            grid.innerHTML = '';
+            noCanchas.style.display = 'none';
+
+            canchas.forEach(cancha => {
+                const canchaCard = createCanchaCard(cancha);
+                grid.appendChild(canchaCard);
+            });
+        }
+
+        function createCanchaCard(cancha) {
+            const card = document.createElement('div');
+            card.className = 'cancha-card';
+
+            const disponible = cancha.estado === 'disponible' || cancha.disponible !== false;
+            const statusClass = disponible ? 'status-disponible' : 'status-ocupada';
+            const statusText = disponible ? 'Disponible' : 'Ocupada';
+
+            card.innerHTML = `
+                <div class="cancha-image">
+                    <i class="fas fa-futbol"></i>
+                    <div class="cancha-status ${statusClass}">
+                        ${statusText}
+                    </div>
+                </div>
+                <div class="cancha-info">
+                    <h3>${cancha.nombre || `Cancha ${cancha.id}`}</h3>
+                    <div class="cancha-details">
+                        <div class="detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${cancha.ubicacion || 'Ubicación no especificada'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-users"></i>
+                            <span>${cancha.capacidad || '22'} jugadores</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Horario: ${cancha.horario || '6:00 AM - 10:00 PM'}</span>
+                        </div>
+                    </div>
+                    <div class="cancha-precio">
+                        $${cancha.precio_por_hora || '50,000'} COP/hora
+                    </div>
+                    <button class="reservar-btn" ${!disponible ? 'disabled' : ''} 
+                            onclick="reservarCancha(${cancha.id})">
+                        <i class="fas fa-calendar-plus"></i>
+                        ${disponible ? 'Reservar Ahora' : 'No Disponible'}
+                    </button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function showNoCanchas() {
+            document.getElementById('canchasGrid').innerHTML = '';
+            document.getElementById('noCanchas').style.display = 'block';
+        }
+
+        function reservarCancha(canchaId) {
+            showLoading();
+            
+            setTimeout(() => {
+                window.location.href = `reservar-cliente.html?cancha=${canchaId}`;
+            }, 500);
+        }
+    </script>
+</body>
+</html>

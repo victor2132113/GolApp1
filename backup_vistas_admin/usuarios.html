@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -452,13 +452,27 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1> Gestión de Usuarios</h1>
+            <h1>👥 Gestión de Usuarios</h1>
             <div class="nav-buttons">
                 <a href="index.html" class="nav-btn">Dashboard</a>
                 <a href="reservas.html" class="nav-btn">Reservas</a>
                 <a href="canchas.html" class="nav-btn">Canchas</a>
                 <a href="reportes.html" class="nav-btn">Reportes</a>
-                <button class="nav-btn" onclick="logout()">Cerrar Sesión</button>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-details">
+                    <span class="user-name" id="userName">Usuario</span>
+                    <span class="role-badge" id="userRole">Rol</span>
+                    <span class="user-email" id="userEmail">📧 usuario@golapp.com</span>
+                </div>
+                <div class="user-actions">
+                    <button class="logout-btn" onclick="logout()" title="Cerrar sesión">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -597,11 +611,35 @@
 
         // Verificar autenticación
         function checkAuth() {
-            const user = localStorage.getItem('user');
+            const user = localStorage.getItem('golapp_user');
             if (!user) {
                 window.location.href = 'login.html';
                 return false;
             }
+            
+            // Mostrar datos del usuario
+            try {
+                const currentUser = JSON.parse(user);
+                document.getElementById('userName').textContent = currentUser.nombre || 'Usuario';
+                
+                // Formatear el rol con emoji
+                const userRole = currentUser.rol || 'usuario';
+                const roleElement = document.getElementById('userRole');
+                if (roleElement) {
+                    if (userRole.toLowerCase() === 'administrador' || userRole.toLowerCase() === 'admin') {
+                        roleElement.textContent = '👑 Administrador';
+                        roleElement.className = 'role-badge admin';
+                    } else {
+                        roleElement.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+                        roleElement.className = 'role-badge';
+                    }
+                }
+                
+                document.getElementById('userEmail').textContent = '📧 ' + (currentUser.correo || currentUser.email || 'usuario@golapp.com');
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+            }
+            
             return true;
         }
 

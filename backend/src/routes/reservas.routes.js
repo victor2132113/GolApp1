@@ -8,6 +8,18 @@ router.post('/', reservasController.create);
 // GET /api/reservas
 router.get('/', reservasController.findAll);
 
+// GET /api/reservas/hoy - Obtener reservas de hoy
+router.get('/hoy', reservasController.getReservationsToday);
+
+// GET /api/reservas/ingresos-mensuales - Obtener ingresos mensuales
+router.get('/ingresos-mensuales', reservasController.getMonthlyRevenue);
+
+// GET /api/reservas/ocupacion-promedio - Obtener ocupación promedio
+router.get('/ocupacion-promedio', reservasController.getAverageOccupancy);
+
+// GET /api/reservas/usuario/:id - Obtener reservas por usuario
+router.get('/usuario/:id', reservasController.findByUser);
+
 // GET /api/reservas/:id
 router.get('/:id', reservasController.findOne);
 

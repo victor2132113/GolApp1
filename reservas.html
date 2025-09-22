@@ -70,7 +70,7 @@
 
         .stat-card.total .icon { color: #2196F3; }
         .stat-card.activas .icon { color: #4CAF50; }
-        .stat-card.completadas .icon { color: #FF9800; }
+        .stat-card.finalizadas .icon { color: #FF9800; }
         .stat-card.hoy .icon { color: #9C27B0; }
 
         .stat-card .number {
@@ -196,6 +196,151 @@
 
         .price-note i {
             margin-right: 0.5rem;
+        }
+
+        /* Estilos para selector de estado */
+        #estadoGroup {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        #estadoGroup label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        #estadoReserva {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: white;
+        }
+
+        /* Estilos para información de horarios */
+        #horariosInfo {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .horarios-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .horarios-header i {
+            color: #2E7D32;
+            font-size: 1.2rem;
+        }
+
+        .horarios-header h4 {
+            margin: 0;
+            color: #495057;
+            font-size: 1rem;
+        }
+
+        .horarios-display {
+            display: grid;
+            gap: 8px;
+        }
+
+        .horario-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .horario-label {
+            font-weight: 500;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .horario-value {
+            font-weight: 600;
+            color: #2E7D32;
+            font-size: 0.95rem;
+        }
+
+        /* Estilos mejorados para información de pago */
+        .payment-amounts {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .payment-amount {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 2px solid;
+            transition: all 0.3s ease;
+        }
+
+        .payment-amount.abono-pago {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .payment-amount.pago-restante {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .payment-amount.confirmada {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .payment-label {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .payment-amount.abono-pago .payment-label {
+            color: #155724;
+        }
+
+        .payment-amount.pago-restante .payment-label {
+            color: #721c24;
+        }
+
+        .payment-amount.confirmada .payment-label {
+            color: #155724;
+        }
+
+        .payment-value {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .payment-amount.abono-pago .payment-value {
+            color: #28a745;
+        }
+
+        .payment-amount.pago-restante .payment-value {
+            color: #dc3545;
+        }
+
+        .payment-amount.confirmada .payment-value {
+            color: #28a745;
         }
 
         .logout-arrow {
@@ -815,18 +960,20 @@
             </a>
         </div>
         <div class="nav-right">
-            <div class="user-profile">
+            <div class="user-info">
                 <div class="user-avatar">
                     <i class="fas fa-user-circle"></i>
                 </div>
                 <div class="user-details">
-                    <div class="user-name" id="userName">Usuario</div>
-                    <div class="user-role" id="userRole">Rol</div>
-                    <div class="user-email" id="userEmail">email@ejemplo.com</div>
+                    <span class="user-name" id="userName">Usuario</span>
+                    <span class="role-badge" id="userRole">Rol</span>
+                    <span class="user-email" id="userEmail">📧 victorino@golapp.com</span>
                 </div>
-                <button class="logout-arrow" onclick="logout()" title="Cerrar Sesión">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
+                <div class="user-actions">
+                    <button class="logout-btn" onclick="logout()" title="Cerrar sesión">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -848,12 +995,12 @@
                 <div class="number" id="reservasActivas">0</div>
                 <div class="label">Reservas Activas</div>
             </div>
-            <div class="stat-card completadas">
+            <div class="stat-card finalizadas">
                 <div class="icon">
                     <i class="fas fa-calendar-times"></i>
                 </div>
                 <div class="number" id="reservasCompletadas">0</div>
-                <div class="label">Completadas</div>
+                <div class="label">Finalizadas</div>
             </div>
             <div class="stat-card hoy">
                 <div class="icon">
@@ -873,21 +1020,26 @@
 
         <div class="filters">
             <div class="filter-group">
+                <label>Buscar</label>
+                <input type="text" id="searchInput" placeholder="Buscar por cancha, usuario o fecha..." class="search-input">
+            </div>
+            <div class="filter-group">
                 <label>Fecha</label>
-                <input type="date" id="filterDate" onchange="loadReservations()">
+                <input type="date" id="filterDate">
             </div>
             <div class="filter-group">
                 <label>Cancha</label>
-                <select id="filterCancha" onchange="loadReservations()">
+                <select id="filterCancha">
                     <option value="">Todas las canchas</option>
                 </select>
             </div>
             <div class="filter-group">
                 <label>Estado</label>
-                <select id="filterStatus" onchange="loadReservations()">
+                <select id="filterStatus">
                     <option value="">Todos los estados</option>
-                    <option value="activa">Activa</option>
-                    <option value="completada">Completada</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="confirmada">Confirmada</option>
+                    <option value="finalizada">Finalizada</option>
                     <option value="cancelada">Cancelada</option>
                 </select>
             </div>
@@ -949,13 +1101,55 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="horaInicio">Hora de Inicio *</label>
-                    <input type="time" id="horaInicio" name="horaInicio" required onchange="calculatePrice()">
+                    <label for="horaInicio">
+                        <i class="fas fa-clock"></i> Hora de Inicio *
+                    </label>
+                    <select id="horaInicio" name="horaInicio" required onchange="calculatePrice()">
+                        <option value="">Selecciona una hora...</option>
+                        <option value="06:00">6:00 AM</option>
+                        <option value="07:00">7:00 AM</option>
+                        <option value="08:00">8:00 AM</option>
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                        <option value="18:00">6:00 PM</option>
+                        <option value="19:00">7:00 PM</option>
+                        <option value="20:00">8:00 PM</option>
+                        <option value="21:00">9:00 PM</option>
+                        <option value="22:00">10:00 PM</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="horaFin">Hora de Fin *</label>
-                    <input type="time" id="horaFin" name="horaFin" required onchange="calculatePrice()">
+                    <label for="horaFin">
+                        <i class="fas fa-clock"></i> Hora de Fin *
+                    </label>
+                    <select id="horaFin" name="horaFin" required onchange="calculatePrice()">
+                        <option value="">Selecciona la hora final...</option>
+                        <option value="07:00">7:00 AM</option>
+                        <option value="08:00">8:00 AM</option>
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                        <option value="18:00">6:00 PM</option>
+                        <option value="19:00">7:00 PM</option>
+                        <option value="20:00">8:00 PM</option>
+                        <option value="21:00">9:00 PM</option>
+                        <option value="22:00">10:00 PM</option>
+                        <option value="23:00">11:00 PM</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -984,6 +1178,17 @@
                     <textarea id="observaciones" rows="3"></textarea>
                 </div>
 
+                <!-- Selector de Estado (solo visible al editar) -->
+                <div class="form-group" id="estadoGroup" style="display: none;">
+                    <label for="estadoReserva">Estado de la Reserva</label>
+                    <select id="estadoReserva" name="estadoReserva" onchange="updatePaymentDisplay()">
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="cancelada">Cancelada</option>
+                        <option value="finalizada">Finalizada</option>
+                    </select>
+                </div>
+
                 <!-- Sección de Pago -->
                 <div class="form-group payment-section">
                     <div class="payment-header">
@@ -991,9 +1196,15 @@
                         <h4>Información de Pago</h4>
                     </div>
                     <div class="payment-info">
-                        <div class="payment-amount">
-                            <span class="payment-label">Abono requerido para reservar:</span>
-                            <span class="payment-value">$15,000 COP</span>
+                        <div class="payment-amounts">
+                            <div class="payment-amount abono-pago" id="abonoPago">
+                                <span class="payment-label">Abono pago:</span>
+                                <span class="payment-value">$15,000 COP</span>
+                            </div>
+                            <div class="payment-amount pago-restante" id="pagoRestante">
+                                <span class="payment-label">Pago restante en el complejo deportivo:</span>
+                                <span class="payment-value" id="pagoRestanteValue">$0 COP</span>
+                            </div>
                         </div>
                         <div class="payment-note">
                             <i class="fas fa-info-circle"></i>

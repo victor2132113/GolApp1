@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const sequelize = require('./config/db.config.js');
 const cors = require('cors');
+const { startAutomaticStatusUpdater } = require('./src/utils/reservationStatusUpdater');
 
 dotenv.config();
 
@@ -13,6 +14,9 @@ async function testConnection() {
   try {
     await sequelize.authenticate();
     console.log('¡Conexión a la base de datos exitosa!');
+    
+    // Iniciar el actualizador automático de estados de reservas
+    startAutomaticStatusUpdater();
   } catch (error) {
     console.error('Error al conectar a la base de datos:', error);
   }
