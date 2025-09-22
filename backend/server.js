@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const sequelize = require('./config/db.config.js');
 const cors = require('cors');
+const { startAutomaticStatusUpdater } = require('./src/utils/reservationStatusUpdater');
 
 dotenv.config();
 
@@ -13,6 +14,9 @@ async function testConnection() {
   try {
     await sequelize.authenticate();
     console.log('¡Conexión a la base de datos exitosa!');
+    
+    // Iniciar el actualizador automático de estados de reservas
+    startAutomaticStatusUpdater();
   } catch (error) {
     console.error('Error al conectar a la base de datos:', error);
   }
@@ -24,7 +28,7 @@ app.use(express.json());
 
 // **IMPORTANTE: Configuración de CORS corregida**
 app.use(cors({
-  origin: '*', // Permitir todos los orígenes temporalmente para desarrollo
+  origin: ['http://127.0.0.1:8000', 'http://localhost:8000', 'http://127.0.0.1:3000', 'http://localhost:3000', 'http://127.0.0.1:5500', 'http://localhost:5500'], // Permitir orígenes específicos
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept']

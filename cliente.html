@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GolApp - Panel Cliente</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .client-header {
+            background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .client-welcome {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .client-avatar {
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .client-info h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .client-info p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .client-main {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .client-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .client-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .client-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border-color: #4a7c59;
+        }
+
+        .client-card-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #4a7c59, #2d5a27);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .client-card h3 {
+            color: #2d5a27;
+            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+        }
+
+        .client-card p {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .contact-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .contact-section h3 {
+            color: #2d5a27;
+            margin-bottom: 1rem;
+        }
+
+        .contact-btn {
+            background: linear-gradient(135deg, #4a7c59, #2d5a27);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .contact-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 124, 89, 0.4);
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4a7c59;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="client-header">
+        <div class="client-welcome">
+            <div class="client-avatar" id="clientAvatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="client-info">
+                <h2 id="clientName">Bienvenido Cliente</h2>
+                <p id="clientEmail">victorino@golapp.com</p>
+            </div>
+        </div>
+        <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Salir
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="client-main">
+        <div class="client-cards">
+            <!-- Ver Canchas Disponibles -->
+            <div class="client-card" onclick="verCanchas()">
+                <div class="client-card-icon">
+                    <i class="fas fa-futbol"></i>
+                </div>
+                <h3>Canchas Disponibles</h3>
+                <p>Explora todas las canchas disponibles y sus horarios. Encuentra la cancha perfecta para tu próximo partido.</p>
+            </div>
+
+            <!-- Hacer Reserva -->
+            <div class="client-card" onclick="hacerReserva()">
+                <div class="client-card-icon">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <h3>Nueva Reserva</h3>
+                <p>Reserva tu cancha favorita de manera rápida y sencilla. Selecciona fecha, hora y tipo de cancha.</p>
+            </div>
+
+            <!-- Mis Reservas -->
+            <div class="client-card" onclick="misReservas()">
+                <div class="client-card-icon">
+                    <i class="fas fa-history"></i>
+                </div>
+                <h3>Mis Reservas</h3>
+                <p>Consulta el historial de todas tus reservas, tanto pasadas como futuras. Gestiona tus reservaciones.</p>
+            </div>
+        </div>
+
+        <!-- Contacto -->
+        <div class="contact-section">
+            <h3><i class="fas fa-envelope"></i> ¿Necesitas Ayuda?</h3>
+            <p>Si tienes alguna pregunta o necesitas asistencia, no dudes en contactarnos.</p>
+            <a href="mailto:victorino@golapp.com?subject=Consulta desde GolApp&body=Hola, tengo una consulta sobre..." class="contact-btn">
+                <i class="fas fa-paper-plane"></i>
+                Contactar Administrador
+            </a>
+        </div>
+    </main>
+
+    <script src="config.js"></script>
+    <script>
+        // Verificar autenticación al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadUserInfo();
+        });
+
+        function checkAuth() {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            const user = Auth.getCurrentUser();
+            if (user && (user.rol === 'administrador' || user.rol === 'admin')) {
+                // Si es admin, redirigir al dashboard de admin
+                window.location.href = 'index.html';
+                return false;
+            }
+            
+            return true;
+        }
+
+        function loadUserInfo() {
+            const user = Auth.getCurrentUser();
+            if (user) {
+                document.getElementById('clientName').textContent = `Bienvenido, ${user.nombre}`;
+                document.getElementById('clientEmail').textContent = user.correo;
+                
+                // Mostrar iniciales en el avatar
+                const initials = user.nombre.split(' ').map(n => n.charAt(0)).join('').toUpperCase();
+                document.getElementById('clientAvatar').textContent = initials;
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function verCanchas() {
+            showLoading();
+            setTimeout(() => {
+                window.location.href = 'canchas-cliente.html';
+            }, 500);
+        }
+
+        function hacerReserva() {
+            showLoading();
+            setTimeout(() => {
+                window.location.href = 'reservar-cliente.html';
+            }, 500);
+        }
+
+        function misReservas() {
+            showLoading();
+            setTimeout(() => {
+                window.location.href = 'mis-reservas.html';
+            }, 500);
+        }
+
+        function logout() {
+            if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+                showLoading();
+                
+                setTimeout(() => {
+                    // Limpiar datos de sesión
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('golapp_token');
+                    localStorage.removeItem('golapp_user');
+                    sessionStorage.clear();
+                    
+                    hideLoading();
+                    window.location.href = 'login.html';
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>

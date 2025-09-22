@@ -25,7 +25,11 @@ module.exports = (sequelize, DataTypes) => {
   }
   Cancha.init({
     nombre_cancha: DataTypes.STRING,
-    estado: DataTypes.STRING
+    estado: DataTypes.STRING,
+    ubicacion: DataTypes.STRING,
+    capacidad: DataTypes.INTEGER,
+    horario_inicio: DataTypes.TIME,
+    horario_fin: DataTypes.TIME
   }, {
     sequelize,
     modelName: 'Cancha',

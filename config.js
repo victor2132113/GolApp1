@@ -23,8 +23,7 @@ const CONFIG = {
         RESERVA: {
             PENDIENTE: 'pendiente',
             CONFIRMADA: 'confirmada',
-            CANCELADA: 'cancelada',
-            COMPLETADA: 'completada'
+            FINALIZADA: 'finalizada'
         },
         CANCHA: {
             DISPONIBLE: 'disponible',
@@ -279,6 +278,11 @@ const API = {
 
 // Manejo de autenticación
 const Auth = {
+    // Obtener token
+    getToken: () => {
+        return localStorage.getItem(CONFIG.AUTH.TOKEN_KEY);
+    },
+    
     // Verificar si el usuario está autenticado
     isAuthenticated: () => {
         const token = localStorage.getItem(CONFIG.AUTH.TOKEN_KEY);

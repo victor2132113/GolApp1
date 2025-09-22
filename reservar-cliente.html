@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GolApp - Nueva Reserva</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .client-header {
+            background: linear-gradient(135deg, #2d5a27 0%, #4a7c59 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .reserva-container {
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title h1 {
+            color: #2d5a27;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-title p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .reserva-form {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2d5a27;
+            font-weight: bold;
+        }
+
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4a7c59;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            color: #333;
+            background-color: #fff;
+        }
+
+        .char-counter {
+            display: block;
+            text-align: right;
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .cancha-preview {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .cancha-preview.show {
+            display: block;
+        }
+
+        .cancha-preview h3 {
+            color: #2d5a27;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .cancha-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+        }
+
+        .info-item i {
+            color: #4a7c59;
+        }
+
+        .precio-total {
+            background: linear-gradient(135deg, #4a7c59, #2d5a27);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+
+        .precio-total h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .night-surcharge-note {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+            color: #664d03;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .night-surcharge-note i {
+            color: #ffc107;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4a7c59, #2d5a27);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 124, 89, 0.4);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Estilos para el sistema de abono */
+        .abono-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .payment-info {
+            text-align: center;
+        }
+
+        .payment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .payment-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .payment-amount {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .payment-note {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-payment {
+            background: linear-gradient(135deg, #6f42c1, #5a2d91);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0 auto;
+        }
+
+        .btn-payment:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.4);
+        }
+
+        .payment-status {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        /* Modal de pago */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .payment-modal {
+            padding: 0;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #6f42c1, #5a2d91);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .payment-modal-body {
+            padding: 2rem;
+        }
+
+        .payment-amount-display {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .payment-amount-display h4 {
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+
+        .payment-amount-display .amount {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .qr-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .qr-section h4 {
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .qr-code {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            background: white;
+        }
+
+        .nequi-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6f42c1;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .payment-instructions {
+            margin-bottom: 2rem;
+        }
+
+        .payment-instructions h4 {
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+
+        .payment-instructions ol {
+            text-align: left;
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .payment-instructions li {
+            margin-bottom: 0.5rem;
+        }
+
+        .payment-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4a7c59;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .cancha-info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="client-header">
+        <h1><i class="fas fa-calendar-plus"></i> Nueva Reserva</h1>
+        <a href="cliente.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </header>
+
+    <!-- Main Content -->
+    <main class="reserva-container">
+        <div class="page-title">
+            <h1>Reservar Cancha</h1>
+            <p>Completa los datos para hacer tu reserva</p>
+        </div>
+
+        <div class="alert" id="alertMessage"></div>
+
+        <form class="reserva-form" id="reservaForm">
+            <!-- Selección de Cancha -->
+            <div class="form-group">
+                <label for="cancha">
+                    <i class="fas fa-futbol"></i> Seleccionar Cancha
+                </label>
+                <select id="cancha" name="cancha" required>
+                    <option value="">Selecciona una cancha...</option>
+                </select>
+            </div>
+
+            <!-- Preview de la cancha seleccionada -->
+            <div id="canchaPreview" class="cancha-preview">
+                <h3><i class="fas fa-info-circle"></i> Información de la Cancha</h3>
+                <div class="cancha-info-grid" id="canchaInfoGrid">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Fecha y Hora -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fecha">
+                        <i class="fas fa-calendar"></i> Fecha
+                    </label>
+                    <input type="date" id="fecha" name="fecha" required>
+                </div>
+                <div class="form-group">
+                    <label for="hora">
+                        <i class="fas fa-clock"></i> Hora de Inicio
+                    </label>
+                    <select id="hora" name="hora" required>
+                        <option value="">Selecciona una hora...</option>
+                        <option value="06:00">6:00 AM</option>
+                        <option value="07:00">7:00 AM</option>
+                        <option value="08:00">8:00 AM</option>
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                        <option value="18:00">6:00 PM</option>
+                        <option value="19:00">7:00 PM</option>
+                        <option value="20:00">8:00 PM</option>
+                        <option value="21:00">9:00 PM</option>
+                        <option value="22:00">10:00 PM</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Hora Final -->
+            <div class="form-group">
+                <label for="horaFinal">
+                    <i class="fas fa-clock"></i> Hora Final
+                </label>
+                <select id="horaFinal" name="horaFinal" required>
+                    <option value="">Selecciona la hora final...</option>
+                    <option value="07:00">7:00 AM</option>
+                    <option value="08:00">8:00 AM</option>
+                    <option value="09:00">9:00 AM</option>
+                    <option value="10:00">10:00 AM</option>
+                    <option value="11:00">11:00 AM</option>
+                    <option value="12:00">12:00 PM</option>
+                    <option value="13:00">1:00 PM</option>
+                    <option value="14:00">2:00 PM</option>
+                    <option value="15:00">3:00 PM</option>
+                    <option value="16:00">4:00 PM</option>
+                    <option value="17:00">5:00 PM</option>
+                    <option value="18:00">6:00 PM</option>
+                    <option value="19:00">7:00 PM</option>
+                    <option value="20:00">8:00 PM</option>
+                    <option value="21:00">9:00 PM</option>
+                    <option value="22:00">10:00 PM</option>
+                    <option value="23:00">11:00 PM</option>
+                </select>
+            </div>
+
+            <!-- Precio Total -->
+            <div id="precioTotal" class="precio-total" style="display: none;">
+                <h3>Total a Pagar: $<span id="montoTotal">0</span> COP</h3>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="form-group">
+                <label for="observaciones">
+                    <i class="fas fa-comment"></i> Observaciones (Opcional)
+                </label>
+                <textarea 
+                    id="observaciones" 
+                    name="observaciones" 
+                    placeholder="Información adicional, solicitudes especiales, tipo de evento, etc."
+                    maxlength="300"
+                    rows="3"
+                ></textarea>
+                <small class="char-counter">
+                    <span id="charCount">0</span>/300 caracteres
+                </small>
+            </div>
+
+            <!-- Sistema de Abono -->
+            <div id="abonoSection" class="abono-section" style="display: none;">
+                <div class="payment-info">
+                    <div class="payment-item">
+                        <span class="payment-label">Abono requerido para reservar:</span>
+                        <span class="payment-amount">$15,000 COP</span>
+                    </div>
+                    <div class="payment-note">
+                        <i class="fas fa-info-circle"></i>
+                        El resto del pago se realiza en la cancha
+                    </div>
+                    <button type="button" class="btn btn-payment" onclick="openPaymentModal()">
+                        <i class="fas fa-mobile-alt"></i> Pagar con Nequi
+                    </button>
+                    <div id="paymentStatus" class="payment-status" style="display: none;">
+                        <i class="fas fa-check-circle"></i>
+                        Pago completado - Puedes confirmar la reserva
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón de Envío -->
+            <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                <i class="fas fa-check"></i>
+                Confirmar Reserva
+            </button>
+        </form>
+    </main>
+
+    <!-- Modal para pago con Nequi -->
+    <div class="modal" id="paymentModal">
+        <div class="modal-content payment-modal">
+            <div class="modal-header">
+                <h3>Pago con Nequi</h3>
+                <button class="close-btn" onclick="closePaymentModal()">&times;</button>
+            </div>
+            <div class="payment-modal-body">
+                <div class="payment-amount-display">
+                    <h4>Monto a pagar</h4>
+                    <div class="amount">$15,000 COP</div>
+                </div>
+                
+                <div class="qr-section">
+                    <h4>Escanea el código QR con Nequi</h4>
+                    <div class="qr-container">
+                        <div class="qr-code">
+                            <!-- Código QR simulado con SVG -->
+                            <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="200" height="200" fill="white"/>
+                                <!-- Patrón de código QR simulado -->
+                                <rect x="0" y="0" width="60" height="60" fill="black"/>
+                                <rect x="10" y="10" width="40" height="40" fill="white"/>
+                                <rect x="20" y="20" width="20" height="20" fill="black"/>
+                                
+                                <rect x="140" y="0" width="60" height="60" fill="black"/>
+                                <rect x="150" y="10" width="40" height="40" fill="white"/>
+                                <rect x="160" y="20" width="20" height="20" fill="black"/>
+                                
+                                <rect x="0" y="140" width="60" height="60" fill="black"/>
+                                <rect x="10" y="150" width="40" height="40" fill="white"/>
+                                <rect x="20" y="160" width="20" height="20" fill="black"/>
+                                
+                                <!-- Patrón central -->
+                                <rect x="80" y="80" width="40" height="40" fill="black"/>
+                                <rect x="90" y="90" width="20" height="20" fill="white"/>
+                                <rect x="95" y="95" width="10" height="10" fill="black"/>
+                                
+                                <!-- Patrones adicionales para simular QR -->
+                                <rect x="70" y="10" width="10" height="10" fill="black"/>
+                                <rect x="90" y="10" width="10" height="10" fill="black"/>
+                                <rect x="110" y="10" width="10" height="10" fill="black"/>
+                                <rect x="130" y="10" width="10" height="10" fill="black"/>
+                                
+                                <rect x="10" y="70" width="10" height="10" fill="black"/>
+                                <rect x="10" y="90" width="10" height="10" fill="black"/>
+                                <rect x="10" y="110" width="10" height="10" fill="black"/>
+                                <rect x="10" y="130" width="10" height="10" fill="black"/>
+                                
+                                <rect x="170" y="70" width="10" height="10" fill="black"/>
+                                <rect x="170" y="90" width="10" height="10" fill="black"/>
+                                <rect x="170" y="110" width="10" height="10" fill="black"/>
+                                <rect x="170" y="130" width="10" height="10" fill="black"/>
+                                
+                                <rect x="70" y="170" width="10" height="10" fill="black"/>
+                                <rect x="90" y="170" width="10" height="10" fill="black"/>
+                                <rect x="110" y="170" width="10" height="10" fill="black"/>
+                                <rect x="130" y="170" width="10" height="10" fill="black"/>
+                                <rect x="150" y="170" width="10" height="10" fill="black"/>
+                            </svg>
+                        </div>
+                        <div class="nequi-logo">
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>Nequi</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-instructions">
+                    <h4>Instrucciones:</h4>
+                    <ol>
+                        <li>Abre tu app de Nequi</li>
+                        <li>Selecciona "Pagar con QR"</li>
+                        <li>Escanea este código QR</li>
+                        <li>Confirma el pago de $15,000</li>
+                        <li>Haz clic en "Confirmar Pago" cuando termines</li>
+                    </ol>
+                </div>
+                
+                <div class="payment-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmPayment()">
+                        <i class="fas fa-check"></i> Confirmar Pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let canchasData = [];
+        let selectedCancha = null;
+
+        // Función para verificar si config.js está cargado
+        function checkConfigLoaded() {
+            console.log('Verificando config.js...');
+            if (window.Auth && typeof window.Auth.getToken === 'function') {
+                console.log('config.js cargado correctamente');
+                initializeApp();
+            } else {
+                console.log('config.js aún no está listo, reintentando...');
+                setTimeout(checkConfigLoaded, 100);
+            }
+        }
+
+        function initializeApp() {
+            if (!checkAuth()) return;
+            
+            loadCanchas();
+            setupFormEvents();
+            setMinDate();
+            
+            // Verificar si hay una cancha preseleccionada en la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const canchaId = urlParams.get('cancha');
+            if (canchaId) {
+                setTimeout(() => {
+                    document.getElementById('cancha').value = canchaId;
+                    handleCanchaChange();
+                }, 1000);
+            }
+        }
+
+        // Verificar autenticación al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM cargado, verificando config.js...');
+            checkConfigLoaded();
+        });
+
+        function checkAuth() {
+            if (!Auth.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            const user = Auth.getCurrentUser();
+            if (user && (user.rol === 'administrador' || user.rol === 'admin')) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            
+            return true;
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showAlert(message, type = 'error') {
+            const alert = document.getElementById('alertMessage');
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        function setMinDate() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const minDate = tomorrow.toISOString().split('T')[0];
+            document.getElementById('fecha').min = minDate;
+        }
+
+        async function loadCanchas() {
+            showLoading();
+            
+            try {
+                console.log('Cargando canchas desde:', `${CONFIG.API_BASE_URL}/canchas`);
+                console.log('Token de autenticación:', Auth.getToken());
+                
+                const response = await fetch(`${CONFIG.API_BASE_URL}/canchas`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    }
+                });
+
+                console.log('Respuesta del servidor:', response.status, response.statusText);
+
+                if (response.ok) {
+                    const responseData = await response.json();
+                    console.log('Respuesta completa de la API:', responseData);
+                    
+                    // Asegurar que canchasData sea un array
+                    if (Array.isArray(responseData)) {
+                        canchasData = responseData;
+                    } else if (responseData.value && Array.isArray(responseData.value)) {
+                        canchasData = responseData.value;
+                    } else if (responseData.canchas && Array.isArray(responseData.canchas)) {
+                        canchasData = responseData.canchas;
+                    } else {
+                        console.error('Formato de respuesta inesperado:', responseData);
+                        canchasData = [];
+                    }
+                    
+                    console.log('Canchas procesadas:', canchasData);
+                    populateCanchasSelect();
+                } else {
+                    const errorText = await response.text();
+                    console.error('Error del servidor:', response.status, errorText);
+                    
+                    if (response.status === 401) {
+                        showAlert('Sesión expirada. Por favor, inicia sesión nuevamente.');
+                        setTimeout(() => {
+                            window.location.href = 'login.html';
+                        }, 2000);
+                    } else {
+                        showAlert('Error al cargar las canchas disponibles');
+                    }
+                }
+            } catch (error) {
+                console.error('Error al cargar canchas:', error);
+                showAlert('Error de conexión al cargar las canchas');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function populateCanchasSelect() {
+            const select = document.getElementById('cancha');
+            console.log('Poblando select de canchas con:', canchasData.length, 'canchas');
+            
+            // Limpiar opciones existentes (excepto la primera)
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
+            if (canchasData && canchasData.length > 0) {
+                canchasData.forEach(cancha => {
+                    const option = document.createElement('option');
+                    option.value = cancha.id;
+                    option.textContent = cancha.nombre_cancha || `Cancha ${cancha.id}`;
+                    select.appendChild(option);
+                    console.log('Agregada cancha:', option.textContent, 'con ID:', option.value);
+                });
+            } else {
+                console.warn('No hay canchas disponibles para mostrar');
+                showAlert('No hay canchas disponibles en este momento', 'warning');
+            }
+        }
+
+        function setupFormEvents() {
+            document.getElementById('cancha').addEventListener('change', handleCanchaChange);
+            document.getElementById('hora').addEventListener('change', handleHoraChange);
+            document.getElementById('horaFinal').addEventListener('change', handleHoraFinalChange);
+            document.getElementById('reservaForm').addEventListener('submit', handleSubmit);
+        }
+
+        function handleHoraChange() {
+            const horaInicio = document.getElementById('hora').value;
+            const horaFinalSelect = document.getElementById('horaFinal');
+            
+            // Limpiar hora final cuando cambia la hora de inicio
+            horaFinalSelect.value = '';
+            
+            // Habilitar/deshabilitar opciones de hora final
+            updateHoraFinalOptions();
+            calculateTotal();
+        }
+
+        function handleHoraFinalChange() {
+            validateDuracion();
+            calculateTotal();
+        }
+
+        function updateHoraFinalOptions() {
+            const horaInicio = document.getElementById('hora').value;
+            const horaFinalSelect = document.getElementById('horaFinal');
+            
+            if (!horaInicio) {
+                // Deshabilitar todas las opciones si no hay hora de inicio
+                Array.from(horaFinalSelect.options).forEach(option => {
+                    if (option.value) option.disabled = true;
+                });
+                return;
+            }
+
+            const horaInicioNum = parseInt(horaInicio.split(':')[0]);
+            
+            Array.from(horaFinalSelect.options).forEach(option => {
+                if (option.value) {
+                    const horaFinalNum = parseInt(option.value.split(':')[0]);
+                    
+                    // Deshabilitar si es menor o igual a la hora de inicio
+                    // o si la diferencia es mayor a 2 horas
+                    const diferencia = horaFinalNum - horaInicioNum;
+                    option.disabled = diferencia <= 0 || diferencia > 2;
+                }
+            });
+        }
+
+        function validateDuracion() {
+            const horaInicio = document.getElementById('hora').value;
+            const horaFinal = document.getElementById('horaFinal').value;
+            
+            if (!horaInicio || !horaFinal) return true;
+
+            const horaInicioNum = parseInt(horaInicio.split(':')[0]);
+            const horaFinalNum = parseInt(horaFinal.split(':')[0]);
+            const duracion = horaFinalNum - horaInicioNum;
+
+            if (duracion <= 0) {
+                showAlert('La hora final debe ser posterior a la hora de inicio', 'error');
+                document.getElementById('horaFinal').value = '';
+                return false;
+            }
+
+            if (duracion > 2) {
+                showAlert('La duración máxima de una reserva es de 2 horas', 'error');
+                document.getElementById('horaFinal').value = '';
+                return false;
+            }
+
+            return true;
+        }
+
+        function getDuracionHoras() {
+            const horaInicio = document.getElementById('hora').value;
+            const horaFinal = document.getElementById('horaFinal').value;
+            
+            if (!horaInicio || !horaFinal) return 0;
+
+            const horaInicioNum = parseInt(horaInicio.split(':')[0]);
+            const horaFinalNum = parseInt(horaFinal.split(':')[0]);
+            
+            return horaFinalNum - horaInicioNum;
+        }
+
+        function handleCanchaChange() {
+            const canchaId = document.getElementById('cancha').value;
+            const preview = document.getElementById('canchaPreview');
+            
+            if (canchaId) {
+                selectedCancha = canchasData.find(c => c.id == canchaId);
+                if (selectedCancha) {
+                    showCanchaPreview(selectedCancha);
+                    preview.classList.add('show');
+                    calculateTotal();
+                }
+            } else {
+                preview.classList.remove('show');
+                selectedCancha = null;
+                document.getElementById('precioTotal').style.display = 'none';
+            }
+        }
+
+        function showCanchaPreview(cancha) {
+            console.log('Mostrando preview de cancha:', cancha);
+            const infoGrid = document.getElementById('canchaInfoGrid');
+            
+            // Obtener información del tipo de cancha si está disponible
+            const tipoCancha = cancha.tipoCancha || {};
+            const precio = tipoCancha.precio || cancha.precio_por_hora || '$50.000';
+            const tipo = tipoCancha.tipo || 'Cancha deportiva';
+            
+            // Formatear horario
+            let horario = '6:00 AM - 10:00 PM';
+            if (cancha.horario_inicio && cancha.horario_fin) {
+                const formatTime = (time) => {
+                    const [hours, minutes] = time.split(':');
+                    const hour = parseInt(hours);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                    return `${displayHour}:${minutes} ${ampm}`;
+                };
+                horario = `${formatTime(cancha.horario_inicio)} - ${formatTime(cancha.horario_fin)}`;
+            }
+            
+            infoGrid.innerHTML = `
+                <div class="info-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>${cancha.ubicacion || 'Ubicación no especificada'}</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-users"></i>
+                    <span>${cancha.capacidad || '22'} jugadores</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span>${precio.replace('$', '').replace(',', '.')} COP/hora</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-clock"></i>
+                    <span>${horario}</span>
+                </div>
+            `;
+        }
+
+        function calculateTotal() {
+            const duracion = getDuracionHoras();
+            const precioTotalDiv = document.getElementById('precioTotal');
+            const montoTotal = document.getElementById('montoTotal');
+            const horaInicio = document.getElementById('hora').value;
+            const horaFinal = document.getElementById('horaFinal').value;
+            
+            if (selectedCancha && duracion > 0) {
+                // Obtener precio del tipo de cancha si está disponible
+                const tipoCancha = selectedCancha.tipoCancha || {};
+                const precioPorHora = parseInt(tipoCancha.precio) || parseInt(selectedCancha.precio_por_hora) || 50000;
+                let total = precioPorHora * duracion;
+                
+                // Verificar recargo nocturno (después de las 6 PM)
+                let hasNightSurcharge = false;
+                if (horaInicio && horaFinal) {
+                    const horaInicioNum = parseInt(horaInicio.split(':')[0]);
+                    const horaFinalNum = parseInt(horaFinal.split(':')[0]);
+                    
+                    if (horaInicioNum >= 18 || horaFinalNum > 18) {
+                        total *= 1.2; // 20% de recargo
+                        hasNightSurcharge = true;
+                    }
+                }
+                
+                montoTotal.textContent = total.toLocaleString();
+                precioTotalDiv.style.display = 'block';
+                
+                // Mostrar nota de recargo nocturno si aplica
+                let nightSurchargeNote = document.getElementById('nightSurchargeNote');
+                if (!nightSurchargeNote) {
+                    // Crear la nota de recargo nocturno si no existe
+                    nightSurchargeNote = document.createElement('div');
+                    nightSurchargeNote.id = 'nightSurchargeNote';
+                    nightSurchargeNote.className = 'night-surcharge-note';
+                    nightSurchargeNote.innerHTML = '<i class="fas fa-moon"></i> Recargo nocturno del 20% aplicado después de las 6:00 PM';
+                    precioTotalDiv.appendChild(nightSurchargeNote);
+                }
+                nightSurchargeNote.style.display = hasNightSurcharge ? 'block' : 'none';
+                
+                // Mostrar sección de abono
+                showAbonoSection();
+            } else {
+                precioTotalDiv.style.display = 'none';
+                document.getElementById('abonoSection').style.display = 'none';
+            }
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            // Verificar que el pago esté completado
+            if (!paymentCompleted) {
+                showAlert('Debes completar el pago del abono antes de confirmar la reserva');
+                return;
+            }
+            
+            // Validar duración antes de enviar
+            if (!validateDuracion()) {
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            const duracion = getDuracionHoras();
+            
+            if (duracion <= 0) {
+                showAlert('Por favor selecciona una hora de inicio y final válidas', 'error');
+                return;
+            }
+
+            const reservaData = {
+                id_cancha: formData.get('cancha'),
+                id_usuario: Auth.getCurrentUser().id,
+                fecha_reserva: formData.get('fecha'),
+                hora_inicio: `${formData.get('fecha')}T${formData.get('hora')}:00`,
+                hora_fin: `${formData.get('fecha')}T${formData.get('horaFinal')}:00`,
+                estado: 'pendiente',
+                observaciones: formData.get('observaciones') || null,
+                telefono_cliente: formData.get('telefono') || Auth.getCurrentUser().telefono || null
+            };
+
+            showLoading();
+            document.getElementById('submitBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/reservas`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Auth.getToken()}`
+                    },
+                    body: JSON.stringify(reservaData)
+                });
+
+                if (response.ok) {
+                    showAlert('¡Reserva creada exitosamente!', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'mis-reservas.html';
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    showAlert(error.message || 'Error al crear la reserva');
+                }
+            } catch (error) {
+                console.error('Error al crear reserva:', error);
+                showAlert('Error de conexión al crear la reserva');
+            } finally {
+                hideLoading();
+                document.getElementById('submitBtn').disabled = false;
+            }
+        }
+
+        // Variables para el sistema de abono
+        let paymentCompleted = false;
+
+        // Funciones para el modal de pago
+        function openPaymentModal() {
+            console.log('openPaymentModal called');
+            const modal = document.getElementById('paymentModal');
+            if (modal) {
+                modal.style.display = 'flex';
+            } else {
+                console.error('Payment modal not found!');
+            }
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+        }
+
+        function confirmPayment() {
+            console.log('=== CONFIRMANDO PAGO ===');
+            
+            // Simular procesamiento de pago
+            paymentCompleted = true;
+            console.log('Estado de pago actualizado:', paymentCompleted);
+            
+            // Mostrar estado de pago completado
+            const paymentStatusElement = document.getElementById('paymentStatus');
+            if (paymentStatusElement) {
+                paymentStatusElement.style.display = 'block';
+                console.log('Elemento paymentStatus mostrado');
+            } else {
+                console.error('ERROR: Elemento paymentStatus no encontrado');
+            }
+            
+            // Habilitar botón de envío
+            updateSubmitButton();
+            console.log('Botón de envío actualizado');
+            
+            // Cerrar modal
+            closePaymentModal();
+            console.log('Modal cerrado');
+        }
+
+        function updateSubmitButton() {
+            const submitBtn = document.getElementById('submitBtn');
+            if (paymentCompleted) {
+                submitBtn.disabled = false;
+                submitBtn.style.background = 'linear-gradient(135deg, #4a7c59, #2d5a27)';
+                submitBtn.style.cursor = 'pointer';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.style.background = '#ccc';
+                submitBtn.style.cursor = 'not-allowed';
+            }
+        }
+
+        function showAbonoSection() {
+            const abonoSection = document.getElementById('abonoSection');
+            if (abonoSection) {
+                abonoSection.style.display = 'block';
+            }
+        }
+
+        // Contador de caracteres para observaciones
+        function initCharCounter() {
+            const observacionesTextarea = document.getElementById('observaciones');
+            const charCountSpan = document.getElementById('charCount');
+            
+            if (observacionesTextarea && charCountSpan) {
+                observacionesTextarea.addEventListener('input', function() {
+                    const currentLength = this.value.length;
+                    charCountSpan.textContent = currentLength;
+                    
+                    // Cambiar color si se acerca al límite
+                    if (currentLength > 250) {
+                        charCountSpan.style.color = '#e74c3c';
+                    } else if (currentLength > 200) {
+                        charCountSpan.style.color = '#f39c12';
+                    } else {
+                        charCountSpan.style.color = '#666';
+                    }
+                });
+            }
+        }
+
+        // Inicializar contador cuando se carga la página
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharCounter();
+        });
+    </script>
+</body>
+</html>

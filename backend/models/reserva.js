@@ -23,7 +23,17 @@ module.exports = (sequelize, DataTypes) => {
     fecha_reserva: DataTypes.DATE,
     hora_inicio: DataTypes.TIME,
     hora_fin: DataTypes.TIME,
-    estado: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada', 'finalizada')
+    estado: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada', 'finalizada'),
+    observaciones: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Observaciones adicionales para la reserva'
+    },
+    telefono_cliente: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'Teléfono del cliente para la reserva'
+    }
   }, {
     sequelize,
     modelName: 'Reserva',
