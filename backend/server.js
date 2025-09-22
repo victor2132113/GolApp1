@@ -7,7 +7,7 @@ const { startAutomaticStatusUpdater } = require('./src/utils/reservationStatusUp
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3100;
+const PORT = process.env.PORT || 3000;
 
 // Probar la conexión a la base de datos
 async function testConnection() {

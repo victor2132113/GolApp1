@@ -1,5 +1,5 @@
 // Configuración de la API
-const API_BASE_URL = 'http://localhost:3100/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // Variables globales
 let implementos = [];

@@ -1,6 +1,6 @@
 // Configuración global de la aplicación
 const CONFIG = {
-    API_BASE_URL: 'http://localhost:3100/api',
+    API_BASE_URL: 'http://localhost:3000/api',
     APP_NAME: 'GolApp',
     VERSION: '1.0.0',
     
