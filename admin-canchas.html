@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración de Canchas - GolApp</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .back-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            z-index: 1000;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1rem;
+            margin: 0;
+            text-align: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 0.95rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .user-info i {
+            font-size: 1.2rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            height: fit-content;
+        }
+
+        .form-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .canchas-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .canchas-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-filter-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box label {
+            display: block;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px 12px 45px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .search-box::before {
+            content: '\f002';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 12px;
+        }
+
+        .filter-box {
+            min-width: 180px;
+            position: relative;
+        }
+
+        .filter-box label {
+            display: block;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-box select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .filter-box select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .filter-box select:hover {
+            border-color: #adb5bd;
+        }
+
+        .canchas-grid {
+            display: grid;
+            gap: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .cancha-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .cancha-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .cancha-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .cancha-info {
+            flex: 1;
+        }
+
+        .cancha-info h3 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 1.3rem;
+        }
+
+        .cancha-info p {
+            color: #6c757d;
+            margin-bottom: 3px;
+        }
+
+        .cancha-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .status-disponible {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-mantenimiento {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-inhabilitada {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            text-align: center;
+        }
+
+        .stat-card i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .stat-card p {
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .stat-disponible i { color: #28a745; }
+        .stat-mantenimiento i { color: #ffc107; }
+        .stat-inhabilitada i { color: #dc3545; }
+        .stat-total i { color: #667eea; }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .back-btn {
+                bottom: 20px;
+                left: 20px;
+                font-size: 0.8rem;
+                padding: 12px 20px;
+            }
+
+            .search-filter-section {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px;
+            }
+
+            .search-box,
+            .filter-box {
+                min-width: 100%;
+            }
+
+            .search-box::before {
+                margin-top: 12px;
+            }
+
+            .cancha-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .cancha-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div>
+                    <h1><i class="fas fa-futbol"></i> Administración de Canchas</h1>
+                </div>
+                <div class="user-info">
+                    <span>Admin</span>
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </div>
+            
+        </header>
+
+        <!-- Botón flotante para volver al panel -->
+        <button class="back-btn" onclick="window.location.href='index.html'">
+            <i class="fas fa-arrow-left"></i> Volver al Panel
+        </button>
+
+        <!-- Estadísticas -->
+        <div style="padding: 30px 30px 0 30px;">
+            <div class="stats-section" id="statsSection">
+                <div class="stat-card stat-total">
+                    <i class="fas fa-futbol"></i>
+                    <h3 id="totalCanchas">0</h3>
+                    <p>Total Canchas</p>
+                </div>
+                <div class="stat-card stat-disponible">
+                    <i class="fas fa-check-circle"></i>
+                    <h3 id="canchasDisponibles">0</h3>
+                    <p>Disponibles</p>
+                </div>
+                <div class="stat-card stat-mantenimiento">
+                    <i class="fas fa-tools"></i>
+                    <h3 id="canchasMantenimiento">0</h3>
+                    <p>En Mantenimiento</p>
+                </div>
+                <div class="stat-card stat-inhabilitada">
+                    <i class="fas fa-times-circle"></i>
+                    <h3 id="canchasInhabilitadas">0</h3>
+                    <p>Inhabilitadas</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Formulario de Canchas -->
+            <div class="form-section">
+                <h2><i class="fas fa-plus-circle"></i> <span id="formTitle">Nueva Cancha</span></h2>
+                
+                <div id="alertContainer"></div>
+
+                <form id="canchaForm">
+                    <div class="form-group">
+                        <label for="nombreCancha">Nombre de la Cancha:</label>
+                        <input type="text" id="nombreCancha" name="nombreCancha" required placeholder="Ej: Cancha Principal">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipoCancha">Tipo de Cancha:</label>
+                        <select id="tipoCancha" name="tipoCancha" required>
+                            <option value="">Seleccionar tipo...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="estado">Estado:</label>
+                        <select id="estado" name="estado" required>
+                            <option value="disponible">Disponible</option>
+                            <option value="mantenimiento">En Mantenimiento</option>
+                            <option value="inhabilitada">Inhabilitada</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> <span id="submitButtonText">Guardar Cancha</span>
+                    </button>
+                    <button type="button" id="cancelEdit" class="btn btn-secondary" style="display: none;">
+                        <i class="fas fa-times"></i> Cancelar Edición
+                    </button>
+                </form>
+
+                <!-- Sección de Gestión de Tipos -->
+                <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid #e9ecef;">
+                    <h3><i class="fas fa-tags"></i> Gestión de Tipos</h3>
+                    <div style="margin-top: 15px;">
+                        <button type="button" id="showTipoForm" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Nuevo Tipo de Cancha
+                        </button>
+                        <button type="button" id="refreshTipos" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i> Actualizar Tipos
+                        </button>
+                    </div>
+
+                    <!-- Formulario para nuevo tipo (oculto inicialmente) -->
+                    <div id="tipoFormContainer" style="display: none; margin-top: 20px; padding: 20px; background: white; border-radius: 8px;">
+                        <h4>Nuevo Tipo de Cancha</h4>
+                        <form id="tipoForm">
+                            <div class="form-group">
+                                <label for="tipoNombre">Tipo:</label>
+                                <input type="text" id="tipoNombre" name="tipoNombre" required placeholder="Ej: Fútbol 11">
+                            </div>
+                            <div class="form-group">
+                                <label for="tipoPrecio">Precio:</label>
+                                <input type="text" id="tipoPrecio" name="tipoPrecio" required placeholder="Ej: $50.000">
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Guardar Tipo
+                            </button>
+                            <button type="button" id="cancelTipoForm" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Canchas -->
+            <div class="canchas-section">
+                <h2><i class="fas fa-list"></i> Canchas Registradas</h2>
+                
+                <!-- Búsqueda y Filtros -->
+                <div class="search-filter-section">
+                    <div class="search-box">
+                        <label for="searchInput">🔍 Buscar Canchas</label>
+                        <input type="text" id="searchInput" placeholder="Escribe el nombre de la cancha..." class="form-group input">
+                    </div>
+                    <div class="filter-box">
+                        <label for="filterEstado">📊 Filtrar por Estado</label>
+                        <select id="filterEstado" class="form-group select">
+                            <option value="">Todos los estados</option>
+                            <option value="disponible">✅ Disponible</option>
+                            <option value="mantenimiento">🔧 En Mantenimiento</option>
+                            <option value="inhabilitada">❌ Inhabilitada</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="canchasContainer">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        <p>Cargando canchas...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let canchas = [];
+        let tiposCanchas = [];
+        let editingCanchaId = null;
+        let filteredCanchas = [];
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadTiposCanchas();
+            loadCanchas();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('canchaForm').addEventListener('submit', handleFormSubmit);
+            document.getElementById('cancelEdit').addEventListener('click', cancelEdit);
+            document.getElementById('searchInput').addEventListener('input', filterCanchas);
+            document.getElementById('filterEstado').addEventListener('change', filterCanchas);
+            document.getElementById('showTipoForm').addEventListener('click', showTipoForm);
+            document.getElementById('cancelTipoForm').addEventListener('click', hideTipoForm);
+            document.getElementById('tipoForm').addEventListener('submit', handleTipoFormSubmit);
+            document.getElementById('refreshTipos').addEventListener('click', loadTiposCanchas);
+        }
+
+        async function loadTiposCanchas() {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/tipocanchas`);
+                if (!response.ok) throw new Error('Error al cargar tipos de cancha');
+                
+                tiposCanchas = await response.json();
+                populateTipoSelects();
+            } catch (error) {
+                console.error('Error al cargar tipos de cancha:', error);
+                showAlert('Error al cargar tipos de cancha: ' + error.message, 'error');
+            }
+        }
+
+        function populateTipoSelects() {
+            const tipoSelect = document.getElementById('tipoCancha');
+            
+            // Limpiar select
+            tipoSelect.innerHTML = '<option value="">Seleccionar tipo...</option>';
+            
+            tiposCanchas.forEach(tipo => {
+                const option1 = document.createElement('option');
+                option1.value = tipo.id;
+                option1.textContent = `${tipo.tipo} - ${tipo.precio}`;
+                tipoSelect.appendChild(option1);
+            });
+        }
+
+        async function loadCanchas() {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/canchas`);
+                if (!response.ok) throw new Error('Error al cargar canchas');
+                
+                canchas = await response.json();
+                filteredCanchas = [...canchas];
+                displayCanchas();
+                updateStats();
+            } catch (error) {
+                showAlert('Error al cargar canchas: ' + error.message, 'error');
+                document.getElementById('canchasContainer').innerHTML = 
+                    '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Error al cargar canchas</h3></div>';
+            }
+        }
+
+        function updateStats() {
+            const total = canchas.length;
+            const disponibles = canchas.filter(c => c.estado === 'disponible').length;
+            const mantenimiento = canchas.filter(c => c.estado === 'mantenimiento').length;
+            const inhabilitadas = canchas.filter(c => c.estado === 'inhabilitada').length;
+
+            document.getElementById('totalCanchas').textContent = total;
+            document.getElementById('canchasDisponibles').textContent = disponibles;
+            document.getElementById('canchasMantenimiento').textContent = mantenimiento;
+            document.getElementById('canchasInhabilitadas').textContent = inhabilitadas;
+        }
+
+        function displayCanchas() {
+            const container = document.getElementById('canchasContainer');
+            
+            if (filteredCanchas.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>No se encontraron canchas</h3>
+                        <p>Intenta ajustar los filtros de búsqueda</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const canchasHTML = filteredCanchas.map(cancha => `
+                <div class="cancha-card">
+                    <div class="cancha-header">
+                        <div class="cancha-info">
+                            <h3>${cancha.nombre_cancha}</h3>
+                            <p><i class="fas fa-tag"></i> ${cancha.tipoCancha?.tipo || 'Sin tipo'}</p>
+                            <p><i class="fas fa-dollar-sign"></i> ${cancha.tipoCancha?.precio || 'Sin precio'}</p>
+                            <span class="status-badge status-${cancha.estado}">${cancha.estado}</span>
+                        </div>
+                        <div class="cancha-actions">
+                            <button onclick="editCancha(${cancha.id})" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            ${cancha.estado !== 'inhabilitada' ? 
+                                `<button onclick="toggleEstadoCancha(${cancha.id}, 'inhabilitada')" class="btn btn-danger">
+                                    <i class="fas fa-ban"></i> Inhabilitar
+                                </button>` :
+                                `<button onclick="toggleEstadoCancha(${cancha.id}, 'disponible')" class="btn btn-success">
+                                    <i class="fas fa-check"></i> Habilitar
+                                </button>`
+                            }
+                            ${cancha.estado === 'disponible' ? 
+                                `<button onclick="toggleEstadoCancha(${cancha.id}, 'mantenimiento')" class="btn btn-warning">
+                                    <i class="fas fa-tools"></i> Mantenimiento
+                                </button>` : ''
+                            }
+                            ${cancha.estado === 'mantenimiento' ? 
+                                `<button onclick="toggleEstadoCancha(${cancha.id}, 'disponible')" class="btn btn-success">
+                                    <i class="fas fa-check"></i> Finalizar Mantenimiento
+                                </button>` : ''
+                            }
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<div class="canchas-grid">${canchasHTML}</div>`;
+        }
+
+        function filterCanchas() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const estadoFilter = document.getElementById('filterEstado').value;
+
+            filteredCanchas = canchas.filter(cancha => {
+                const matchesSearch = cancha.nombre_cancha.toLowerCase().includes(searchTerm) ||
+                                    (cancha.tipoCancha?.tipo || '').toLowerCase().includes(searchTerm);
+                const matchesEstado = !estadoFilter || cancha.estado === estadoFilter;
+
+                return matchesSearch && matchesEstado;
+            });
+
+            displayCanchas();
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            try {
+                const formData = new FormData(e.target);
+                
+                const canchaData = {
+                    nombre_cancha: formData.get('nombreCancha'),
+                    id_tipo: parseInt(formData.get('tipoCancha')),
+                    estado: formData.get('estado')
+                };
+
+                let response;
+                if (editingCanchaId) {
+                    response = await fetch(`${CONFIG.API_BASE_URL}/canchas/${editingCanchaId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(canchaData)
+                    });
+                } else {
+                    response = await fetch(`${CONFIG.API_BASE_URL}/canchas`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(canchaData)
+                    });
+                }
+
+                if (!response.ok) throw new Error('Error al guardar la cancha');
+
+                showAlert(editingCanchaId ? 'Cancha actualizada exitosamente' : 'Cancha creada exitosamente', 'success');
+                resetForm();
+                await loadCanchas();
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        function editCancha(id) {
+            const cancha = canchas.find(c => c.id === id);
+            if (!cancha) return;
+
+            editingCanchaId = id;
+            
+            document.getElementById('nombreCancha').value = cancha.nombre_cancha;
+            document.getElementById('tipoCancha').value = cancha.id_tipo;
+            document.getElementById('estado').value = cancha.estado;
+
+            document.getElementById('formTitle').textContent = 'Editar Cancha';
+            document.getElementById('submitButtonText').textContent = 'Actualizar Cancha';
+            document.getElementById('cancelEdit').style.display = 'inline-flex';
+            
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function toggleEstadoCancha(id, nuevoEstado) {
+            const accion = nuevoEstado === 'inhabilitada' ? 'inhabilitar' : 
+                          nuevoEstado === 'mantenimiento' ? 'poner en mantenimiento' : 'habilitar';
+            
+            if (!confirm(`¿Estás seguro de que deseas ${accion} esta cancha?`)) return;
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/canchas/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado: nuevoEstado })
+                });
+
+                if (!response.ok) throw new Error('Error al actualizar el estado de la cancha');
+
+                showAlert(`Cancha ${accion === 'inhabilitar' ? 'inhabilitada' : accion === 'poner en mantenimiento' ? 'puesta en mantenimiento' : 'habilitada'} exitosamente`, 'success');
+                await loadCanchas();
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('canchaForm').reset();
+            editingCanchaId = null;
+            document.getElementById('formTitle').textContent = 'Nueva Cancha';
+            document.getElementById('submitButtonText').textContent = 'Guardar Cancha';
+            document.getElementById('cancelEdit').style.display = 'none';
+        }
+
+        function cancelEdit() {
+            resetForm();
+        }
+
+        function showTipoForm() {
+            document.getElementById('tipoFormContainer').style.display = 'block';
+            document.getElementById('showTipoForm').style.display = 'none';
+        }
+
+        function hideTipoForm() {
+            document.getElementById('tipoFormContainer').style.display = 'none';
+            document.getElementById('showTipoForm').style.display = 'inline-flex';
+            document.getElementById('tipoForm').reset();
+        }
+
+        async function handleTipoFormSubmit(e) {
+            e.preventDefault();
+            
+            try {
+                const formData = new FormData(e.target);
+                
+                const tipoData = {
+                    tipo: formData.get('tipoNombre'),
+                    precio: formData.get('tipoPrecio')
+                };
+
+                const response = await fetch(`${CONFIG.API_BASE_URL}/tipocanchas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(tipoData)
+                });
+
+                if (!response.ok) throw new Error('Error al crear el tipo de cancha');
+
+                showAlert('Tipo de cancha creado exitosamente', 'success');
+                hideTipoForm();
+                await loadTiposCanchas(); // Recargar tipos
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type}" style="display: block;">
+                    ${message}
+                </div>
+            `;
+            
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

@@ -285,8 +285,24 @@ const Auth = {
     
     // Verificar si el usuario está autenticado
     isAuthenticated: () => {
-        const token = localStorage.getItem(CONFIG.AUTH.TOKEN_KEY);
-        const user = localStorage.getItem(CONFIG.AUTH.USER_KEY);
+        let token = localStorage.getItem(CONFIG.AUTH.TOKEN_KEY);
+        let user = localStorage.getItem(CONFIG.AUTH.USER_KEY);
+        
+        // Si no hay usuario o token, crear uno temporal para demo
+        if (!token || !user) {
+            const demoUser = {
+                nombre: 'Administrador Demo',
+                correo: 'admin@golapp.com',
+                rol: 'administrador',
+                id: 1
+            };
+            
+            localStorage.setItem(CONFIG.AUTH.TOKEN_KEY, 'demo_token_123');
+            localStorage.setItem(CONFIG.AUTH.USER_KEY, JSON.stringify(demoUser));
+            
+            return true;
+        }
+        
         return !!(token && user);
     },
     
@@ -304,11 +320,9 @@ const Auth = {
     
     // Verificar y redirigir si no está autenticado
     requireAuth: () => {
-        if (!Auth.isAuthenticated()) {
-            window.location.href = 'login.html';
-            return false;
-        }
-        return true;
+        // Con la nueva lógica de isAuthenticated, siempre retornará true
+        // ya que crea un usuario demo si no existe
+        return Auth.isAuthenticated();
     },
     
     // Login

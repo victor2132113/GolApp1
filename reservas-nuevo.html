@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Reservas - GolApp</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-50%) translateX(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .form-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+
+        .reservas-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .reservas-grid {
+            display: grid;
+            gap: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .reserva-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .reserva-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .reserva-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .reserva-info {
+            flex: 1;
+        }
+
+        .reserva-info h3 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .reserva-info p {
+            color: #6c757d;
+            margin-bottom: 3px;
+        }
+
+        .reserva-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-confirmada {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-pendiente {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-cancelada {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .back-to-dashboard {
+            text-align: center;
+            padding: 30px;
+            border-top: 2px solid #e9ecef;
+            background: #f8f9fa;
+        }
+
+        .btn-back {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn-back:hover {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-calendar-check"></i> Gestión de Reservas</h1>
+            <p>Crea, visualiza y gestiona todas las reservas de canchas</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Formulario de Reservas -->
+            <div class="form-section">
+                <h2><i class="fas fa-plus-circle"></i> Nueva Reserva</h2>
+                
+                <div id="alertContainer"></div>
+
+                <form id="reservaForm">
+                    <div class="form-group">
+                        <label for="cancha">Cancha:</label>
+                        <select id="cancha" name="cancha" required>
+                            <option value="">Seleccionar cancha...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nombre">Nombre del Cliente:</label>
+                        <input type="text" id="nombre" name="nombre" required placeholder="Ingrese el nombre completo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telefono">Teléfono:</label>
+                        <input type="tel" id="telefono" name="telefono" required placeholder="Ingrese el número de teléfono">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fecha">Fecha:</label>
+                        <input type="date" id="fecha" name="fecha" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="horaInicio">Hora de Inicio:</label>
+                        <input type="time" id="horaInicio" name="horaInicio" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="horaFin">Hora de Fin:</label>
+                        <input type="time" id="horaFin" name="horaFin" required>
+                    </div>
+
+
+
+                    <div class="form-group">
+                        <label for="estado">Estado:</label>
+                        <select id="estado" name="estado" required>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="confirmada">Confirmada</option>
+                            <option value="cancelada">Cancelada</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Reserva
+                    </button>
+                    <button type="button" id="cancelEdit" class="btn btn-warning" style="display: none;">
+                        <i class="fas fa-times"></i> Cancelar Edición
+                    </button>
+                </form>
+            </div>
+
+            <!-- Lista de Reservas -->
+            <div class="reservas-section">
+                <h2><i class="fas fa-list"></i> Reservas Existentes</h2>
+                
+                <div id="reservasContainer">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        <p>Cargando reservas...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Botón de regresar al dashboard -->
+        <div class="back-to-dashboard">
+            <button onclick="regresarDashboard()" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                Regresar al Dashboard
+            </button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let reservas = [];
+        let canchas = [];
+        let editingReservaId = null;
+
+        // Inicializar aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
+
+        async function initApp() {
+            try {
+                await loadCanchas();
+                await loadReservas();
+                setupEventListeners();
+                setMinDate();
+            } catch (error) {
+                showAlert('Error al inicializar la aplicación: ' + error.message, 'error');
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('reservaForm').addEventListener('submit', handleFormSubmit);
+            document.getElementById('cancelEdit').addEventListener('click', cancelEdit);
+        }
+
+        function setMinDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fecha').min = today;
+        }
+
+        async function loadCanchas() {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/canchas`);
+                if (!response.ok) throw new Error('Error al cargar canchas');
+                
+                canchas = await response.json();
+                console.log('Canchas cargadas:', canchas); // Para debug
+                populateCanchaSelect();
+            } catch (error) {
+                console.error('Error al cargar canchas:', error);
+                showAlert('Error al cargar canchas: ' + error.message, 'error');
+            }
+        }
+
+        function populateCanchaSelect() {
+            const select = document.getElementById('cancha');
+            select.innerHTML = '<option value="">Seleccionar cancha...</option>';
+            
+            canchas.forEach(cancha => {
+                const option = document.createElement('option');
+                option.value = cancha.id;
+                option.textContent = `${cancha.nombre_cancha} - ${cancha.tipoCancha?.tipo || 'Sin tipo'}`;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadReservas() {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/reservas`);
+                if (!response.ok) throw new Error('Error al cargar reservas');
+                
+                reservas = await response.json();
+                displayReservas();
+            } catch (error) {
+                showAlert('Error al cargar reservas: ' + error.message, 'error');
+                document.getElementById('reservasContainer').innerHTML = 
+                    '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Error al cargar reservas</h3></div>';
+            }
+        }
+
+        function displayReservas() {
+            const container = document.getElementById('reservasContainer');
+            
+            if (reservas.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <h3>No hay reservas</h3>
+                        <p>Crea tu primera reserva usando el formulario</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const reservasHTML = reservas.map(reserva => `
+                <div class="reserva-card">
+                    <div class="reserva-header">
+                        <div class="reserva-info">
+                            <h3>${reserva.cancha?.nombre || 'Cancha no encontrada'}</h3>
+                            <p><i class="fas fa-user"></i> ${reserva.usuario?.nombre || 'Cliente no especificado'}</p>
+                            <p><i class="fas fa-phone"></i> ${reserva.usuario?.telefono || 'Sin teléfono'}</p>
+                            <p><i class="fas fa-calendar"></i> ${formatDate(reserva.fecha_reserva)}</p>
+                            <p><i class="fas fa-clock"></i> ${reserva.hora_inicio} - ${reserva.hora_fin}</p>
+                        </div>
+                        <div>
+                            <span class="status-badge status-${reserva.estado}">${reserva.estado}</span>
+                        </div>
+                    </div>
+                    <div class="reserva-actions">
+                        <button class="btn btn-warning btn-small" onclick="editReserva(${reserva.id})">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deleteReserva(${reserva.id})">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<div class="reservas-grid">${reservasHTML}</div>`;
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                let userId;
+                
+                if (editingReservaId) {
+                    // Para edición, actualizar los datos del usuario existente
+                    const existingReserva = reservas.find(r => r.id === editingReservaId);
+                    userId = existingReserva?.id_usuario || 1;
+                    
+                    // Actualizar datos del usuario
+                    const newEmail = `${formData.get('nombre').toLowerCase().replace(/\s+/g, '')}@cliente.com`;
+                    const userUpdateData = {
+                        nombre: formData.get('nombre'),
+                        telefono: formData.get('telefono'),
+                        email: newEmail,
+                        cancha_reservada: nombreCancha
+                    };
+
+                    try {
+                        // Verificar si el email ya existe en otro usuario
+                        const currentUser = await fetch(`${CONFIG.API_BASE_URL}/usuarios/${userId}`);
+                        if (currentUser.ok) {
+                            const userData = await currentUser.json();
+                            // Solo actualizar si el email es diferente o es el mismo usuario
+                            if (userData.correo !== newEmail) {
+                                // Verificar si el nuevo email ya existe
+                                const emailCheckResponse = await fetch(`${CONFIG.API_BASE_URL}/usuarios`);
+                                if (emailCheckResponse.ok) {
+                                    const allUsers = await emailCheckResponse.json();
+                                    const emailExists = allUsers.some(user => user.correo === newEmail && user.id !== userId);
+                                    
+                                    if (emailExists) {
+                                        // Si el email existe, agregar un número al final
+                                        const timestamp = Date.now().toString().slice(-4);
+                                        userUpdateData.email = `${formData.get('nombre').toLowerCase().replace(/\s+/g, '')}${timestamp}@cliente.com`;
+                                    }
+                                }
+                            }
+                        }
+
+                        const userUpdateResponse = await fetch(`${CONFIG.API_BASE_URL}/usuarios/${userId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(userUpdateData)
+                        });
+
+                        if (!userUpdateResponse.ok) {
+                            console.warn('No se pudo actualizar los datos del usuario');
+                        }
+                    } catch (error) {
+                        console.warn('Error al actualizar usuario:', error);
+                    }
+                } else {
+                    // Para nueva reserva, crear o buscar usuario
+                    const userData = {
+                        nombre: formData.get('nombre'),
+                        telefono: formData.get('telefono'),
+                        email: `${formData.get('nombre').toLowerCase().replace(/\s+/g, '')}@cliente.com`,
+                        password: 'cliente123',
+                        role: 'cliente',
+                        cancha_reservada: nombreCancha
+                    };
+
+                    // Intentar crear el usuario
+                    const userResponse = await fetch(`${CONFIG.API_BASE_URL}/usuarios`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userData)
+                    });
+
+                    if (userResponse.ok) {
+                        const newUser = await userResponse.json();
+                        userId = newUser.id;
+                    } else {
+                        // Si falla, usar usuario por defecto
+                        userId = 1;
+                    }
+                }
+
+                // Obtener el nombre de la cancha seleccionada
+                const canchaId = parseInt(formData.get('cancha'));
+                const canchaSeleccionada = canchas.find(c => c.id === canchaId);
+                const nombreCancha = canchaSeleccionada ? 
+                    `${canchaSeleccionada.nombre_cancha} - ${canchaSeleccionada.tipoCancha?.tipo || 'Sin tipo'}` : 
+                    'Cancha no encontrada';
+
+                const reservaData = {
+                    id_cancha: canchaId,
+                    nombre_cancha: nombreCancha,
+                    fecha_reserva: formData.get('fecha'),
+                    hora_inicio: formData.get('horaInicio'),
+                    hora_fin: formData.get('horaFin'),
+                    estado: formData.get('estado'),
+                    id_usuario: userId
+                };
+
+                let response;
+                if (editingReservaId) {
+                    response = await fetch(`${CONFIG.API_BASE_URL}/reservas/${editingReservaId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(reservaData)
+                    });
+                } else {
+                    response = await fetch(`${CONFIG.API_BASE_URL}/reservas`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(reservaData)
+                    });
+                }
+
+                if (!response.ok) throw new Error('Error al guardar la reserva');
+
+                showAlert(editingReservaId ? 'Reserva actualizada exitosamente' : 'Reserva creada exitosamente', 'success');
+                resetForm();
+                await loadReservas();
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        function editReserva(id) {
+            const reserva = reservas.find(r => r.id === id);
+            if (!reserva) return;
+
+            editingReservaId = id;
+            
+            document.getElementById('cancha').value = reserva.id_cancha;
+            document.getElementById('nombre').value = reserva.usuario?.nombre || '';
+            document.getElementById('telefono').value = reserva.usuario?.telefono || '';
+            document.getElementById('fecha').value = reserva.fecha_reserva;
+            document.getElementById('horaInicio').value = reserva.hora_inicio;
+            document.getElementById('horaFin').value = reserva.hora_fin;
+            document.getElementById('estado').value = reserva.estado;
+
+            document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-save"></i> Actualizar Reserva';
+            document.getElementById('cancelEdit').style.display = 'inline-flex';
+            
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function deleteReserva(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar esta reserva?')) return;
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/reservas/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Error al eliminar la reserva');
+
+                showAlert('Reserva eliminada exitosamente', 'success');
+                await loadReservas();
+            } catch (error) {
+                showAlert('Error al eliminar: ' + error.message, 'error');
+            }
+        }
+
+        function cancelEdit() {
+            resetForm();
+        }
+
+        function resetForm() {
+            document.getElementById('reservaForm').reset();
+            editingReservaId = null;
+            document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-save"></i> Guardar Reserva';
+            document.getElementById('cancelEdit').style.display = 'none';
+            setMinDate();
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            container.innerHTML = `
+                <div class="alert alert-${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                    ${message}
+                </div>
+            `;
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function regresarDashboard() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
