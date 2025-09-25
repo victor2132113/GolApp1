@@ -16,7 +16,15 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Prestamo.init({
-    cantidad_prestada: DataTypes.INTEGER
+    cantidad_prestada: DataTypes.INTEGER,
+    estado: {
+      type: DataTypes.ENUM('activo', 'devuelto', 'vencido', 'perdido', 'dañado'),
+      allowNull: false,
+      defaultValue: 'activo',
+      validate: {
+        isIn: [['activo', 'devuelto', 'vencido', 'perdido', 'dañado']]
+      }
+    }
   }, {
     sequelize,
     modelName: 'Prestamo',
