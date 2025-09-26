@@ -98,16 +98,6 @@
         .form-group textarea {
             resize: vertical;
             min-height: 80px;
-        }
-
-        /* Estilos para opciones deshabilitadas */
-        select option:disabled {
-            color: #999 !important;
-            background-color: #f5f5f5 !important;
-            font-style: italic;
-        }
-
-        .form-group select option {
             color: #333;
             background-color: #fff;
         }
@@ -938,19 +928,10 @@
         }
 
         function setupFormEvents() {
-            document.getElementById('cancha').addEventListener('change', async function() {
-                await handleCanchaChange();
-                await updateAvailableHours();
-            });
+            document.getElementById('cancha').addEventListener('change', handleCanchaChange);
             document.getElementById('hora').addEventListener('change', handleHoraChange);
             document.getElementById('horaFinal').addEventListener('change', handleHoraFinalChange);
             document.getElementById('reservaForm').addEventListener('submit', handleSubmit);
-            
-            // Agregar listener para el cambio de fecha
-            const fechaInput = document.getElementById('fecha');
-            if (fechaInput) {
-                fechaInput.addEventListener('change', updateAvailableHours);
-            }
         }
 
         function handleHoraChange() {
@@ -1033,7 +1014,7 @@
             return horaFinalNum - horaInicioNum;
         }
 
-        async function handleCanchaChange() {
+        function handleCanchaChange() {
             const canchaId = document.getElementById('cancha').value;
             const preview = document.getElementById('canchaPreview');
             
@@ -1043,9 +1024,6 @@
                     showCanchaPreview(selectedCancha);
                     preview.classList.add('show');
                     calculateTotal();
-                    
-                    // Actualizar horarios disponibles cuando cambie la cancha
-                    await updateAvailableHours();
                 }
             } else {
                 preview.classList.remove('show');
@@ -1169,15 +1147,13 @@
             const reservaData = {
                 id_cancha: formData.get('cancha'),
                 id_usuario: Auth.getCurrentUser().id,
-                fecha_reserva: formData.get('fecha'), // Enviar la fecha tal como está, sin conversión
-                hora_inicio: `${formData.get('hora')}:00`,
-                hora_fin: `${formData.get('horaFinal')}:00`,
+                fecha_reserva: formData.get('fecha'),
+                hora_inicio: `${formData.get('fecha')}T${formData.get('hora')}:00`,
+                hora_fin: `${formData.get('fecha')}T${formData.get('horaFinal')}:00`,
                 estado: 'pendiente',
                 observaciones: formData.get('observaciones') || null,
                 telefono_cliente: formData.get('telefono') || Auth.getCurrentUser().telefono || null
             };
-
-            console.log('Datos de reserva a enviar:', reservaData);
 
             showLoading();
             document.getElementById('submitBtn').disabled = true;
@@ -1300,186 +1276,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             initCharCounter();
         });
-
-        // Función para actualizar horarios disponibles basado en ocupación
-        async function updateAvailableHours() {
-            const canchaSelect = document.getElementById('cancha');
-            const fechaInput = document.getElementById('fecha');
-            const horaSelect = document.getElementById('hora');
-            const horaFinalSelect = document.getElementById('horaFinal');
-            
-            if (!canchaSelect.value || !fechaInput.value) {
-                return;
-            }
-            
-            try {
-                // Obtener horarios ocupados
-                const response = await fetch(`${CONFIG.API_BASE_URL}/reservas/horarios-ocupados?id_cancha=${canchaSelect.value}&fecha=${fechaInput.value}`, {
-                    headers: {
-                        'Authorization': `Bearer ${Auth.getToken()}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const occupiedTimes = data.horarios_ocupados || [];
-                    console.log('Horarios ocupados obtenidos:', occupiedTimes);
-                    console.log('Cancha seleccionada:', canchaSelect.value);
-                    console.log('Fecha seleccionada:', fechaInput.value);
-                    
-                    // Función para verificar si una hora está ocupada
-                    function isTimeOccupied(timeValue) {
-                        return occupiedTimes.some(occupied => {
-                            const startTime = occupied.hora_inicio;
-                            const endTime = occupied.hora_fin;
-                            // Bloquear tanto las horas de inicio como las de fin ocupadas
-                            return timeValue >= startTime && timeValue <= endTime;
-                        });
-                    }
-                    
-                    // Función para convertir hora en formato "7:00 AM" a "07:00:00"
-                    function normalizeTimeFormat(timeStr) {
-                        if (!timeStr) return '';
-                        
-                        // Si ya está en formato 24h (07:00:00), devolverlo tal como está
-                        if (timeStr.match(/^\d{2}:\d{2}:\d{2}$/)) {
-                            return timeStr;
-                        }
-                        
-                        // Si está en formato 12h (7:00 AM), convertir a 24h
-                        if (timeStr.includes('AM') || timeStr.includes('PM')) {
-                            const [time, period] = timeStr.split(' ');
-                            const [hours, minutes] = time.split(':');
-                            let hour24 = parseInt(hours);
-                            
-                            if (period === 'PM' && hour24 !== 12) {
-                                hour24 += 12;
-                            } else if (period === 'AM' && hour24 === 12) {
-                                hour24 = 0;
-                            }
-                            
-                            return `${hour24.toString().padStart(2, '0')}:${minutes}:00`;
-                        }
-                        
-                        // Si está en formato simple (7:00), asumir formato 24h y agregar segundos
-                        if (timeStr.match(/^\d{1,2}:\d{2}$/)) {
-                            const [hours, minutes] = timeStr.split(':');
-                            return `${hours.padStart(2, '0')}:${minutes}:00`;
-                        }
-                        
-                        return timeStr;
-                    }
-
-                    // Función para verificar si una hora de inicio está disponible
-                    function isStartTimeAvailable(timeValue) {
-                        console.log(`🔍 Verificando disponibilidad hora inicio: ${timeValue}`);
-                        console.log(`📋 Horarios ocupados:`, occupiedTimes);
-                        
-                        const normalizedTimeValue = normalizeTimeFormat(timeValue);
-                        console.log(`🔄 Hora normalizada: ${timeValue} → ${normalizedTimeValue}`);
-                        
-                        const isAvailable = !occupiedTimes.some(occupied => {
-                            const startTime = normalizeTimeFormat(occupied.hora_inicio);
-                            const endTime = normalizeTimeFormat(occupied.hora_fin);
-                            console.log(`⏰ Comparando ${normalizedTimeValue} con reserva ${startTime}-${endTime}`);
-                            
-                            // No permitir iniciar en horarios ocupados (incluyendo las horas exactas de inicio y fin)
-                            const blocked = normalizedTimeValue >= startTime && normalizedTimeValue < endTime;
-                            console.log(`   ${normalizedTimeValue} >= ${startTime}: ${normalizedTimeValue >= startTime}`);
-                            console.log(`   ${normalizedTimeValue} < ${endTime}: ${normalizedTimeValue < endTime}`);
-                            console.log(`   Resultado bloqueado: ${blocked}`);
-                            
-                            if (blocked) {
-                                console.log(`❌ Hora ${timeValue} bloqueada por reserva ${occupied.hora_inicio}-${occupied.hora_fin}`);
-                            }
-                            return blocked;
-                        });
-                        console.log(`✅ Hora inicio ${timeValue} disponible:`, isAvailable);
-                        return isAvailable;
-                    }
-                    
-                    // Función para verificar si una hora de fin está disponible
-                    function isEndTimeAvailable(timeValue) {
-                        console.log(`🔍 Verificando disponibilidad hora fin: ${timeValue}`);
-                        
-                        const normalizedTimeValue = normalizeTimeFormat(timeValue);
-                        console.log(`🔄 Hora fin normalizada: ${timeValue} → ${normalizedTimeValue}`);
-                        
-                        const isAvailable = !occupiedTimes.some(occupied => {
-                            const startTime = normalizeTimeFormat(occupied.hora_inicio);
-                            const endTime = normalizeTimeFormat(occupied.hora_fin);
-                            console.log(`⏰ Comparando hora fin ${normalizedTimeValue} con reserva ${startTime}-${endTime}`);
-                            
-                            // No permitir terminar en horarios ocupados (incluyendo las horas exactas de inicio y fin)
-                            const blocked = normalizedTimeValue > startTime && normalizedTimeValue <= endTime;
-                            console.log(`   ${normalizedTimeValue} > ${startTime}: ${normalizedTimeValue > startTime}`);
-                            console.log(`   ${normalizedTimeValue} <= ${endTime}: ${normalizedTimeValue <= endTime}`);
-                            console.log(`   Resultado bloqueado: ${blocked}`);
-                            
-                            if (blocked) {
-                                console.log(`❌ Hora fin ${timeValue} bloqueada por reserva ${occupied.hora_inicio}-${occupied.hora_fin}`);
-                            }
-                            return blocked;
-                        });
-                        console.log(`✅ Hora fin ${timeValue} disponible:`, isAvailable);
-                        return isAvailable;
-                    }
-                    
-                    // Actualizar opciones de hora de inicio
-                    Array.from(horaSelect.options).forEach(option => {
-                        if (option.value) {
-                            const isOccupied = !isStartTimeAvailable(option.value);
-                            option.disabled = isOccupied;
-                            
-                            if (isOccupied) {
-                                option.textContent = option.textContent.replace(' (Ocupado)', '') + ' (Ocupado)';
-                                option.style.color = '#999';
-                                option.style.backgroundColor = '#f5f5f5';
-                            } else {
-                                option.textContent = option.textContent.replace(' (Ocupado)', '');
-                                option.style.color = '';
-                                option.style.backgroundColor = '';
-                            }
-                        }
-                    });
-                    
-                    // Actualizar opciones de hora final
-                    Array.from(horaFinalSelect.options).forEach(option => {
-                        if (option.value) {
-                            const isOccupied = !isEndTimeAvailable(option.value);
-                            option.disabled = isOccupied;
-                            
-                            if (isOccupied) {
-                                option.textContent = option.textContent.replace(' (Ocupado)', '') + ' (Ocupado)';
-                                option.style.color = '#999';
-                                option.style.backgroundColor = '#f5f5f5';
-                            } else {
-                                option.textContent = option.textContent.replace(' (Ocupado)', '');
-                                option.style.color = '';
-                                option.style.backgroundColor = '';
-                            }
-                        }
-                    });
-                    
-                    // Si la hora seleccionada está ocupada, limpiarla
-                    if (horaSelect.value && !isStartTimeAvailable(horaSelect.value)) {
-                        horaSelect.value = '';
-                        horaFinalSelect.value = '';
-                        calculateTotal();
-                    }
-                    
-                    if (horaFinalSelect.value && !isEndTimeAvailable(horaFinalSelect.value)) {
-                        horaFinalSelect.value = '';
-                        calculateTotal();
-                    }
-                    
-                } else {
-                    console.error('Error al obtener horarios ocupados:', response.status);
-                }
-            } catch (error) {
-                console.error('Error al consultar horarios ocupados:', error);
-            }
-        }
     </script>
 </body>
 </html>

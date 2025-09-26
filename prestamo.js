@@ -193,16 +193,24 @@ function populateReservaSelect() {
 }
 
 // Cargar préstamos desde la API
-async function loadPrestamos() {
+async function loadPrestamos(timeFilter = '') {
     try {
         showLoading(true);
-        const response = await fetch(`${API_BASE_URL}/prestamos`);
+        let url = `${API_BASE_URL}/prestamos`;
+        
+        // Agregar filtro de tiempo si se especifica
+        if (timeFilter) {
+            url += `?timeFilter=${timeFilter}`;
+        }
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status}`);
         }
         
-        prestamos = await response.json();
+        const data = await response.json();
+        prestamos = data.data || data; // Manejar tanto formato con 'data' como array directo
         displayPrestamos(prestamos);
         showLoading(false);
     } catch (error) {
@@ -636,6 +644,40 @@ async function savePrestamo() {
         return;
     }
 
+    // Validación de disponibilidad en el frontend
+    if (!editingPrestamo) { // Solo validar para nuevos préstamos
+        try {
+            console.log('🔍 Validando disponibilidad en el frontend...');
+            
+            // Obtener información del producto seleccionado
+            const productoSeleccionado = productos.find(p => p.id === prestamoData.id_producto);
+            if (!productoSeleccionado) {
+                showError('Producto no encontrado.');
+                return;
+            }
+
+            // Verificar disponibilidad antes de enviar
+            const response = await fetch(`${API_BASE_URL}/productos/${prestamoData.id_producto}`);
+            if (!response.ok) {
+                throw new Error('Error al verificar disponibilidad');
+            }
+            
+            const productoActual = await response.json();
+            const cantidadDisponible = productoActual.cantidad_disponible || 0;
+            
+            if (prestamoData.cantidad_prestada > cantidadDisponible) {
+                showError(`Stock insuficiente. Disponible: ${cantidadDisponible}, Solicitado: ${prestamoData.cantidad_prestada}`);
+                return;
+            }
+            
+            console.log('✅ Validación de disponibilidad pasada');
+        } catch (error) {
+            console.error('Error al validar disponibilidad:', error);
+            showError('Error al verificar disponibilidad. Inténtalo de nuevo.');
+            return;
+        }
+    }
+
     console.log('✅ Validaciones pasadas, enviando solicitud...');
 
     try {
@@ -820,11 +862,16 @@ function goToAdmin() {
     window.location.href = 'admin.html';
 }
 
-// Eventos de conexión
+// Función para aplicar filtros de tiempo
+function applyTimeFilter() {
+    const timeFilter = document.getElementById('time-filter').value;
+    console.log('🔍 Aplicando filtro de tiempo:', timeFilter);
+    loadPrestamos(timeFilter);
+}
+
+// Event listeners para conexión
 window.addEventListener('online', function() {
     showSuccess('Conexión restaurada');
-    loadPrestamos();
-    loadStats();
 });
 
 window.addEventListener('offline', function() {
@@ -841,3 +888,4 @@ window.changeStatus = changeStatus;
 window.markOverdue = markOverdue;
 window.goToImplementos = goToImplementos;
 window.goToAdmin = goToAdmin;
+window.applyTimeFilter = applyTimeFilter;

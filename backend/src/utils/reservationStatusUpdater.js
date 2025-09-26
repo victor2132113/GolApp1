@@ -32,9 +32,27 @@ async function updateReservationStatuses() {
             {
                 where: {
                     estado: 'confirmada',
-                    hora_fin: {
-                        [db.Sequelize.Op.lt]: now
-                    }
+                    [db.Sequelize.Op.or]: [
+                        // Reservas de fechas pasadas
+                        {
+                            fecha_reserva: {
+                                [db.Sequelize.Op.lt]: now.toISOString().split('T')[0]
+                            }
+                        },
+                        // Reservas de hoy que ya terminaron
+                        {
+                            [db.Sequelize.Op.and]: [
+                                {
+                                    fecha_reserva: now.toISOString().split('T')[0]
+                                },
+                                {
+                                    hora_fin: {
+                                        [db.Sequelize.Op.lt]: now.toTimeString().split(' ')[0]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 }
             }
         );

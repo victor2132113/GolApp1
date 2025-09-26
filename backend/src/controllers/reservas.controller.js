@@ -3,6 +3,11 @@ const Reserva = db.Reserva;
 const Cancha = db.Cancha;
 const Usuario = db.Usuario;
 const TipoCancha = db.TipoCancha; // ⚠️ Paso 1: Importa el modelo TipoCancha
+const Prestamo = db.Prestamo;
+const Producto = db.Producto;
+
+// Importar la función de validación de disponibilidad
+const { validarDisponibilidad } = require('./prestamos.controller');
 
 // Crear una nueva reserva
 exports.create = async (req, res) => {
@@ -21,8 +26,13 @@ exports.create = async (req, res) => {
       });
     }
 
-    // Verificar que la cancha existe
-    const cancha = await db.Cancha.findByPk(id_cancha);
+    // Verificar que la cancha existe y obtener su tipo
+    const cancha = await db.Cancha.findByPk(id_cancha, {
+      include: [{
+        model: TipoCancha,
+        as: 'tipoCancha'
+      }]
+    });
     if (!cancha) {
       console.error('ERROR: Cancha no encontrada:', id_cancha);
       return res.status(404).json({ error: 'Cancha no encontrada' });
@@ -35,12 +45,63 @@ exports.create = async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    // Verificar disponibilidad de horario
+    const conflictos = await Reserva.findAll({
+      where: {
+        id_cancha: parseInt(id_cancha),
+        fecha_reserva: new Date(fecha_reserva + 'T12:00:00'),
+        estado: ['pendiente', 'confirmada'], // Solo verificar reservas activas, no finalizadas
+        [db.Sequelize.Op.or]: [
+          {
+            // Caso 1: La nueva reserva empieza durante una reserva existente
+            [db.Sequelize.Op.and]: [
+              { hora_inicio: { [db.Sequelize.Op.lte]: hora_inicio } },
+              { hora_fin: { [db.Sequelize.Op.gt]: hora_inicio } }
+            ]
+          },
+          {
+            // Caso 2: La nueva reserva termina durante una reserva existente
+            [db.Sequelize.Op.and]: [
+              { hora_inicio: { [db.Sequelize.Op.lt]: hora_fin } },
+              { hora_fin: { [db.Sequelize.Op.gte]: hora_fin } }
+            ]
+          },
+          {
+            // Caso 3: La nueva reserva contiene completamente una reserva existente
+            [db.Sequelize.Op.and]: [
+              { hora_inicio: { [db.Sequelize.Op.gte]: hora_inicio } },
+              { hora_fin: { [db.Sequelize.Op.lte]: hora_fin } }
+            ]
+          }
+        ]
+      }
+    });
+
+    if (conflictos.length > 0) {
+      console.error('ERROR: Horario no disponible - conflicto encontrado');
+      return res.status(409).json({ 
+        error: 'El horario seleccionado no está disponible',
+        message: 'Ya existe una reserva en ese horario para esta cancha',
+        conflictos: conflictos.map(c => ({
+          fecha: c.fecha_reserva,
+          hora_inicio: c.hora_inicio,
+          hora_fin: c.hora_fin,
+          estado: c.estado
+        }))
+      });
+    }
+
     console.log('Validaciones pasadas, creando reserva...');
+    
+    // Corregir el problema de zona horaria para la fecha
+    const fechaCorrecta = new Date(fecha_reserva + 'T12:00:00');
+    console.log('📅 Fecha original:', fecha_reserva);
+    console.log('📅 Fecha procesada:', fechaCorrecta);
     
     const nuevaReserva = await Reserva.create({
       id_cancha: parseInt(id_cancha),
       id_usuario: parseInt(id_usuario),
-      fecha_reserva: new Date(fecha_reserva),
+      fecha_reserva: fechaCorrecta,
       hora_inicio: hora_inicio, // Enviar como string TIME, no como Date
       hora_fin: hora_fin, // Enviar como string TIME, no como Date
       estado: estado || 'pendiente',
@@ -49,7 +110,142 @@ exports.create = async (req, res) => {
     });
     
     console.log('✅ Reserva creada exitosamente:', nuevaReserva.toJSON());
-    res.status(201).json(nuevaReserva);
+    
+    // ========================================
+    // ASIGNACIÓN AUTOMÁTICA DE IMPLEMENTOS BÁSICOS
+    // ========================================
+    // ⚠️ IMPORTANTE: Solo asignar implementos si la reserva se crea directamente como 'confirmada'
+    if (nuevaReserva.estado === 'confirmada') {
+      try {
+        console.log('🏈 Iniciando asignación automática de implementos para reserva confirmada...');
+        
+        // Definir reglas de asignación según tipo de cancha
+        const tipoCancha = cancha.tipoCancha?.tipo;
+        let cantidadPetos = 0;
+        
+        switch (tipoCancha) {
+          case 'Fútbol 11':
+            cantidadPetos = 11; // 22 jugadores / 2 = 11 petos
+            break;
+          case 'Fútbol 7':
+            cantidadPetos = 7; // 14 jugadores / 2 = 7 petos
+            break;
+          case 'Fútbol 5':
+            cantidadPetos = 5; // 10 jugadores / 2 = 5 petos
+            break;
+          default:
+            console.log('⚠️ Tipo de cancha no reconocido para asignación automática:', tipoCancha);
+            cantidadPetos = 0;
+        }
+        
+        console.log(`📋 Tipo de cancha: ${tipoCancha}, Petos a asignar: ${cantidadPetos}`);
+        
+        // Buscar productos específicos (Balón Fútbol ID:1 y Chalecos ID:7)
+        const balon = await Producto.findByPk(1); // Balón Fútbol
+        const chalecos = await Producto.findByPk(7); // Chalecos
+        
+        const prestamosCreados = [];
+        const erroresValidacion = [];
+        
+        // Crear préstamo para balón (siempre 1 balón para canchas de fútbol)
+        if (balon && cantidadPetos > 0) {
+          try {
+            // Validar disponibilidad del balón
+            const validacionBalon = await validarDisponibilidad(balon.id, 1);
+            
+            if (validacionBalon.esValido) {
+              const prestamoBalon = await Prestamo.create({
+                cantidad_prestada: 1,
+                id_reserva: nuevaReserva.id,
+                id_producto: balon.id,
+                estado: 'activo'
+              });
+              prestamosCreados.push({
+                producto: balon.nombre_producto,
+                cantidad: 1
+              });
+              console.log('⚽ Balón asignado automáticamente');
+            } else {
+              erroresValidacion.push({
+                producto: balon.nombre_producto,
+                error: `Stock insuficiente. Disponible: ${validacionBalon.cantidadDisponible}, Solicitado: 1`
+              });
+              console.log(`⚠️ No se pudo asignar balón: stock insuficiente (disponible: ${validacionBalon.cantidadDisponible})`);
+            }
+          } catch (error) {
+            erroresValidacion.push({
+              producto: balon.nombre_producto,
+              error: 'Error al validar disponibilidad del balón'
+            });
+            console.error('Error al validar balón:', error);
+          }
+        }
+        
+        // Crear préstamo para chalecos/petos
+        if (chalecos && cantidadPetos > 0) {
+          try {
+            // Validar disponibilidad de chalecos
+            const validacionChalecos = await validarDisponibilidad(chalecos.id, cantidadPetos);
+            
+            if (validacionChalecos.esValido) {
+              const prestamoPetos = await Prestamo.create({
+                cantidad_prestada: cantidadPetos,
+                id_reserva: nuevaReserva.id,
+                id_producto: chalecos.id,
+                estado: 'activo'
+              });
+              prestamosCreados.push({
+                producto: chalecos.nombre_producto,
+                cantidad: cantidadPetos
+              });
+              console.log(`👕 ${cantidadPetos} chalecos asignados automáticamente`);
+            } else {
+              erroresValidacion.push({
+                producto: chalecos.nombre_producto,
+                error: `Stock insuficiente. Disponible: ${validacionChalecos.cantidadDisponible}, Solicitado: ${cantidadPetos}`
+              });
+              console.log(`⚠️ No se pudieron asignar ${cantidadPetos} chalecos: stock insuficiente (disponible: ${validacionChalecos.cantidadDisponible})`);
+            }
+          } catch (error) {
+            erroresValidacion.push({
+              producto: chalecos.nombre_producto,
+              error: 'Error al validar disponibilidad de chalecos'
+            });
+            console.error('Error al validar chalecos:', error);
+          }
+        }
+        
+        console.log('✅ Implementos básicos procesados:', prestamosCreados);
+        if (erroresValidacion.length > 0) {
+          console.log('⚠️ Errores en asignación de implementos:', erroresValidacion);
+        }
+        
+        // Incluir información de préstamos en la respuesta
+        const respuesta = {
+          ...nuevaReserva.toJSON(),
+          implementos_asignados: prestamosCreados
+        };
+        
+        if (erroresValidacion.length > 0) {
+          respuesta.errores_implementos = erroresValidacion;
+          respuesta.warning = 'Reserva creada pero algunos implementos no pudieron ser asignados por falta de stock';
+        }
+        
+        res.status(201).json(respuesta);
+        
+      } catch (implementosError) {
+        console.error('⚠️ Error al asignar implementos automáticos:', implementosError);
+        // No fallar la reserva por errores en implementos, solo registrar el error
+        res.status(201).json({
+          ...nuevaReserva.toJSON(),
+          warning: 'Reserva creada pero hubo un problema al asignar implementos automáticos'
+        });
+      }
+    } else {
+      // Si la reserva se crea como 'pendiente', no asignar implementos
+      console.log('ℹ️ Reserva creada como pendiente - Los implementos se asignarán cuando se confirme');
+      res.status(201).json(nuevaReserva.toJSON());
+    }
   } catch (error) {
     console.error('❌ ERROR al crear la reserva:', error);
     console.error('Stack trace:', error.stack);
@@ -224,6 +420,21 @@ exports.findOne = async (req, res) => {
 // Actualizar una reserva
 exports.update = async (req, res) => {
   try {
+    // Obtener la reserva actual para comparar estados
+    const reservaActual = await Reserva.findByPk(req.params.id, {
+      include: [
+        {
+          model: Cancha,
+          as: 'cancha',
+          include: [{ model: TipoCancha, as: 'tipoCancha' }]
+        }
+      ]
+    });
+
+    if (!reservaActual) {
+      return res.status(404).json({ error: 'Reserva no encontrada' });
+    }
+
     // Procesar los datos antes de actualizar
     const updateData = { ...req.body };
     
@@ -237,14 +448,102 @@ exports.update = async (req, res) => {
     
     // Si se está actualizando la fecha, convertir a Date
     if (updateData.fecha_reserva) {
-      updateData.fecha_reserva = new Date(updateData.fecha_reserva);
+      updateData.fecha_reserva = new Date(updateData.fecha_reserva + 'T12:00:00');
     }
     
     const [updated] = await Reserva.update(updateData, {
       where: { id: req.params.id }
     });
+
     if (updated) {
-      const updatedReserva = await Reserva.findByPk(req.params.id);
+      const updatedReserva = await Reserva.findByPk(req.params.id, {
+        include: [
+          {
+            model: Cancha,
+            as: 'cancha',
+            include: [{ model: TipoCancha, as: 'tipoCancha' }]
+          }
+        ]
+      });
+
+      // 🎯 NUEVA LÓGICA: Crear préstamos automáticos cuando el estado cambie a 'confirmada'
+      if (updateData.estado === 'confirmada' && reservaActual.estado !== 'confirmada') {
+        console.log('🔄 Estado cambiado a CONFIRMADA - Creando préstamos automáticos...');
+        
+        try {
+          // Verificar si ya existen préstamos para esta reserva
+          const prestamosExistentes = await Prestamo.findAll({
+            where: { id_reserva: req.params.id }
+          });
+
+          if (prestamosExistentes.length === 0) {
+            console.log('📦 No hay préstamos existentes, creando implementos automáticos...');
+            
+            // Obtener productos disponibles
+            const [balon, chalecos] = await Promise.all([
+              Producto.findOne({ where: { nombre_producto: 'Balón Fútbol' } }),
+              Producto.findOne({ where: { nombre_producto: 'Chalecos' } })
+            ]);
+
+            const prestamosCreados = [];
+            const tipoCancha = updatedReserva.cancha?.tipoCancha?.tipo;
+            
+            // Determinar cantidad de chalecos según el tipo de cancha
+            let cantidadPetos = 0;
+            if (tipoCancha === 'Fútbol 11') {
+              cantidadPetos = 11;
+            } else if (tipoCancha === 'Fútbol 7') {
+              cantidadPetos = 7;
+            } else if (tipoCancha === 'Fútbol 5') {
+              cantidadPetos = 5;
+            }
+
+            console.log(`🏟️ Tipo de cancha: ${tipoCancha}, Chalecos a asignar: ${cantidadPetos}`);
+
+            // Crear préstamo para balón
+            if (balon) {
+              await Prestamo.create({
+                cantidad_prestada: 1,
+                id_reserva: req.params.id,
+                id_producto: balon.id
+              });
+              prestamosCreados.push({
+                producto: balon.nombre_producto,
+                cantidad: 1
+              });
+              console.log('⚽ Balón asignado automáticamente');
+            }
+            
+            // Crear préstamo para chalecos/petos
+            if (chalecos && cantidadPetos > 0) {
+              await Prestamo.create({
+                cantidad_prestada: cantidadPetos,
+                id_reserva: req.params.id,
+                id_producto: chalecos.id
+              });
+              prestamosCreados.push({
+                producto: chalecos.nombre_producto,
+                cantidad: cantidadPetos
+              });
+              console.log(`👕 ${cantidadPetos} chalecos asignados automáticamente`);
+            }
+
+            console.log('✅ Implementos básicos asignados exitosamente al confirmar reserva:', prestamosCreados);
+            
+            // Incluir información de préstamos en la respuesta
+            return res.status(200).json({
+              ...updatedReserva.toJSON(),
+              implementos_asignados: prestamosCreados
+            });
+          } else {
+            console.log('ℹ️ Ya existen préstamos para esta reserva, no se crean nuevos');
+          }
+        } catch (implementosError) {
+          console.error('⚠️ Error al asignar implementos automáticos al confirmar:', implementosError);
+          // No fallar la actualización por errores en implementos
+        }
+      }
+
       return res.status(200).json(updatedReserva);
     }
     throw new Error('Reserva no encontrada');
@@ -497,5 +796,104 @@ exports.getAverageOccupancy = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener ocupación promedio:', error);
     res.status(500).json({ error: 'Error al obtener ocupación promedio' });
+  }
+};
+
+// Obtener horarios ocupados para una cancha en una fecha específica
+exports.getOccupiedTimes = async (req, res) => {
+  try {
+    const { id_cancha, fecha } = req.query;
+    
+    if (!id_cancha || !fecha) {
+      return res.status(400).json({ 
+        error: 'Parámetros requeridos: id_cancha y fecha' 
+      });
+    }
+
+    console.log(`Consultando horarios ocupados para cancha ${id_cancha} en fecha ${fecha}`);
+
+    const reservas = await Reserva.findAll({
+      where: {
+        id_cancha: parseInt(id_cancha),
+        fecha_reserva: new Date(fecha + 'T12:00:00'),
+        estado: ['pendiente', 'confirmada']
+      },
+      attributes: ['hora_inicio', 'hora_fin', 'estado'],
+      order: [['hora_inicio', 'ASC']]
+    });
+
+    const horariosOcupados = reservas.map(reserva => ({
+      hora_inicio: reserva.hora_inicio,
+      hora_fin: reserva.hora_fin,
+      estado: reserva.estado
+    }));
+
+    console.log(`Encontrados ${horariosOcupados.length} horarios ocupados`);
+
+    res.status(200).json({
+      cancha_id: parseInt(id_cancha),
+      fecha: fecha,
+      horarios_ocupados: horariosOcupados
+    });
+  } catch (error) {
+    console.error('Error al obtener horarios ocupados:', error);
+    res.status(500).json({ error: 'Error al obtener horarios ocupados' });
+  }
+};
+
+// Obtener implementos prestados por reserva
+exports.getImplementosByReserva = async (req, res) => {
+  console.log('=== CONTROLADOR: Obteniendo implementos por reserva ===');
+  
+  try {
+    const reservaId = req.params.id;
+    console.log('ID de reserva:', reservaId);
+
+    // Verificar que la reserva existe
+    const reserva = await Reserva.findByPk(reservaId);
+    if (!reserva) {
+      console.error('ERROR: Reserva no encontrada:', reservaId);
+      return res.status(404).json({ error: 'Reserva no encontrada' });
+    }
+
+    // Obtener todos los préstamos asociados a esta reserva
+    const prestamos = await Prestamo.findAll({
+      where: {
+        id_reserva: reservaId
+      },
+      include: [{
+        model: Producto,
+        as: 'producto',
+        attributes: ['id', 'nombre_producto', 'cantidad_total']
+      }],
+      attributes: ['id', 'cantidad_prestada', 'estado', 'createdAt', 'updatedAt']
+    });
+
+    console.log('Préstamos encontrados:', prestamos.length);
+
+    // Formatear los datos para el frontend
+    const implementos = prestamos.map(prestamo => ({
+      id: prestamo.id,
+      nombre: prestamo.producto ? prestamo.producto.nombre_producto : 'Producto no disponible',
+      cantidad_total: prestamo.producto ? prestamo.producto.cantidad_total : 0,
+      cantidad: prestamo.cantidad_prestada,
+      estado: prestamo.estado,
+      fecha_prestamo: prestamo.createdAt,
+      fecha_actualizacion: prestamo.updatedAt
+    }));
+
+    console.log('Implementos formateados:', implementos);
+
+    res.status(200).json({
+      success: true,
+      data: implementos
+    });
+
+  } catch (error) {
+    console.error('ERROR al obtener implementos por reserva:', error);
+    res.status(500).json({ 
+      error: 'Error interno del servidor',
+      details: error.message 
+    });
   }
 };

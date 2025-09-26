@@ -271,11 +271,10 @@ function formatPrice(price) {
 }
 
 // Función para filtrar horas disponibles según la fecha seleccionada
-async function filterAvailableHours() {
+function filterAvailableHours() {
     const fechaInput = document.getElementById('fecha');
     const horaInicioSelect = document.getElementById('horaInicio');
     const horaFinSelect = document.getElementById('horaFin');
-    const canchaSelect = document.getElementById('cancha');
     
     if (!fechaInput || !horaInicioSelect) return;
     
@@ -327,35 +326,6 @@ async function filterAvailableHours() {
         { value: "23:00", text: "11:00 PM", hour: 23 }
     ];
     
-    // Obtener horarios ocupados si hay cancha y fecha seleccionadas
-    let occupiedTimes = [];
-    if (canchaSelect && canchaSelect.value && fechaInput.value) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/reservas/horarios-ocupados?id_cancha=${canchaSelect.value}&fecha=${fechaInput.value}`, {
-                headers: {
-                    'Authorization': `Bearer ${Auth.getToken()}`
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                occupiedTimes = data.horarios_ocupados || [];
-                console.log('Horarios ocupados obtenidos:', occupiedTimes);
-            }
-        } catch (error) {
-            console.error('Error al obtener horarios ocupados:', error);
-        }
-    }
-    
-    // Función para verificar si una hora está ocupada
-    function isTimeOccupied(timeValue) {
-        return occupiedTimes.some(occupied => {
-            const startTime = occupied.hora_inicio;
-            const endTime = occupied.hora_fin;
-            return timeValue >= startTime && timeValue < endTime;
-        });
-    }
-    
     // Guardar valores seleccionados
     const selectedStartHour = horaInicioSelect.value;
     const selectedEndHour = horaFinSelect ? horaFinSelect.value : '';
@@ -376,14 +346,6 @@ async function filterAvailableHours() {
         const option = document.createElement('option');
         option.value = hour.value;
         option.textContent = hour.text;
-        
-        // Deshabilitar si está ocupada
-        if (isTimeOccupied(hour.value)) {
-            option.disabled = true;
-            option.textContent += ' (Ocupado)';
-            option.style.color = '#999';
-        }
-        
         horaInicioSelect.appendChild(option);
     });
     
@@ -397,27 +359,19 @@ async function filterAvailableHours() {
             const option = document.createElement('option');
             option.value = hour.value;
             option.textContent = hour.text;
-            
-            // Deshabilitar si está ocupada
-            if (isTimeOccupied(hour.value)) {
-                option.disabled = true;
-                option.textContent += ' (Ocupado)';
-                option.style.color = '#999';
-            }
-            
             horaFinSelect.appendChild(option);
         });
     }
     
-    // Restaurar valores seleccionados si aún están disponibles y no ocupados
-    if (selectedStartHour && availableStartHours.some(h => h.value === selectedStartHour) && !isTimeOccupied(selectedStartHour)) {
+    // Restaurar valores seleccionados si aún están disponibles
+    if (selectedStartHour && availableStartHours.some(h => h.value === selectedStartHour)) {
         horaInicioSelect.value = selectedStartHour;
     }
     if (selectedEndHour && horaFinSelect) {
         const availableEndHours = isToday ? 
             endHours.filter(hour => hour.hour > currentHour) : 
             endHours;
-        if (availableEndHours.some(h => h.value === selectedEndHour) && !isTimeOccupied(selectedEndHour)) {
+        if (availableEndHours.some(h => h.value === selectedEndHour)) {
             horaFinSelect.value = selectedEndHour;
         }
     }
@@ -439,32 +393,11 @@ async function loadReservations() {
             url += `?fecha=${dateFilter}`;
         }
         
-        console.log('🔄 Cargando reservas desde:', url);
-        
         const response = await fetch(url);
         if (response.ok) {
             const data = await response.json();
-            console.log('📊 Datos recibidos de la API:', data);
-            
-            // La API devuelve un objeto con reservations array y Count
-            let allReservations = [];
-            
-            // Manejar diferentes estructuras de respuesta
-            if (Array.isArray(data)) {
-                // Si la respuesta es directamente un array
-                allReservations = data;
-            } else if (data.reservations && Array.isArray(data.reservations)) {
-                // Si la respuesta tiene una propiedad reservations
-                allReservations = data.reservations;
-            } else if (data.data && Array.isArray(data.data)) {
-                // Si la respuesta tiene una propiedad data
-                allReservations = data.data;
-            } else {
-                console.warn('⚠️ Estructura de datos no reconocida:', data);
-                allReservations = [];
-            }
-            
-            console.log('📋 Reservas procesadas:', allReservations.length, 'elementos');
+            // La API devuelve un objeto con reservations array y count
+            let allReservations = data.reservations || data || [];
             
             // Si hay filtro de fecha, filtrar localmente también por si acaso
             if (dateFilter) {
@@ -481,15 +414,14 @@ async function loadReservations() {
             }
             
             reservations = allReservations;
-            console.log('✅ Reservas cargadas:', reservations.length);
             updateStats();
             displayReservations();
         } else {
-            console.error('❌ Error response:', response.status, response.statusText);
+            console.error('Error response:', response.status, response.statusText);
             Utils.showToast('Error al cargar las reservas', 'error');
         }
     } catch (error) {
-        console.error('❌ Error loading reservations:', error);
+        console.error('Error loading reservations:', error);
         Utils.showToast('Error de conexión al cargar las reservas', 'error');
     } finally {
         // Ocultar loading siempre
@@ -1155,12 +1087,6 @@ window.addEventListener('load', () => {
         fechaInput.addEventListener('change', filterAvailableHours);
         // Ejecutar al cargar para filtrar horas iniciales
         filterAvailableHours();
-    }
-    
-    // Agregar event listener para el cambio de cancha
-    const canchaSelect = document.getElementById('cancha');
-    if (canchaSelect) {
-        canchaSelect.addEventListener('change', filterAvailableHours);
     }
     
     // Agregar event listener para el checkbox de "pagar por nequi"

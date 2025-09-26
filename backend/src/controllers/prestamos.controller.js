@@ -4,20 +4,148 @@ const Reserva = db.Reserva;
 const Producto = db.Producto;
 const Usuario = db.Usuario;
 
+// Función auxiliar para validar disponibilidad de stock
+const validarDisponibilidad = async (id_producto, cantidad_solicitada) => {
+  const producto = await Producto.findByPk(id_producto, {
+    include: [{
+      model: Prestamo,
+      as: 'prestamos',
+      required: false,
+      where: {
+        estado: 'activo'
+      }
+    }]
+  });
+
+  if (!producto) {
+    throw new Error('Producto no encontrado');
+  }
+
+  const cantidadActualmentePrestada = producto.prestamos.reduce((total, prestamo) => {
+    return total + prestamo.cantidad_prestada;
+  }, 0);
+
+  const cantidadDisponible = producto.cantidad_total - cantidadActualmentePrestada;
+
+  return {
+    producto,
+    cantidadDisponible,
+    cantidadActualmentePrestada,
+    esValido: cantidad_solicitada <= cantidadDisponible
+  };
+};
+
 // Crear un nuevo préstamo
 exports.create = async (req, res) => {
   try {
-    const nuevoPrestamo = await Prestamo.create(req.body);
-    res.status(201).json(nuevoPrestamo);
+    const { id_producto, cantidad_prestada, id_reserva } = req.body;
+
+    // Validaciones básicas
+    if (!id_producto || !cantidad_prestada || !id_reserva) {
+      return res.status(400).json({ 
+        error: 'Todos los campos son requeridos: id_producto, cantidad_prestada, id_reserva' 
+      });
+    }
+
+    if (cantidad_prestada <= 0) {
+      return res.status(400).json({ 
+        error: 'La cantidad prestada debe ser mayor a 0' 
+      });
+    }
+
+    // Validar disponibilidad usando la función auxiliar
+    const validacion = await validarDisponibilidad(id_producto, cantidad_prestada);
+    
+    if (!validacion.esValido) {
+      return res.status(400).json({ 
+        error: `Stock insuficiente. Disponible: ${validacion.cantidadDisponible}, Solicitado: ${cantidad_prestada}`,
+        disponible: validacion.cantidadDisponible,
+        solicitado: cantidad_prestada,
+        total: validacion.producto.cantidad_total,
+        prestado: validacion.cantidadActualmentePrestada
+      });
+    }
+
+    // Crear el préstamo con estado activo por defecto
+    const nuevoPrestamo = await Prestamo.create({
+      ...req.body,
+      estado: req.body.estado || 'activo'
+    });
+
+    // Obtener el préstamo creado con sus relaciones
+    const prestamoCompleto = await Prestamo.findByPk(nuevoPrestamo.id, {
+      include: [
+        { 
+          model: Reserva, 
+          as: 'reserva',
+          include: [
+            {
+              model: Usuario,
+              as: 'usuario',
+              attributes: ['id', 'nombre', 'correo']
+            }
+          ]
+        },
+        { 
+          model: Producto, 
+          as: 'producto',
+          attributes: ['id', 'nombre_producto', 'cantidad_total']
+        }
+      ]
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Préstamo creado exitosamente',
+      data: prestamoCompleto
+    });
   } catch (error) {
+    console.error('Error al crear el préstamo:', error);
     res.status(500).json({ error: 'Error al crear el préstamo' });
   }
 };
 
-// Obtener todos los préstamos
+// Exportar la función auxiliar para uso en otros controladores
+exports.validarDisponibilidad = validarDisponibilidad;
+
+// Obtener todos los préstamos con filtros opcionales
 exports.findAll = async (req, res) => {
   try {
+    const { timeFilter } = req.query;
+    let whereCondition = {};
+
+    // Aplicar filtros de tiempo si se especifica
+    if (timeFilter) {
+      const now = new Date();
+      let fechaInicio;
+
+      switch (timeFilter) {
+        case '3days':
+          fechaInicio = new Date(now.getTime() - (3 * 24 * 60 * 60 * 1000));
+          break;
+        case 'week':
+          fechaInicio = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+          break;
+        case 'month':
+          fechaInicio = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+          break;
+        case 'year':
+          fechaInicio = new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000));
+          break;
+        default:
+          // Si no es un filtro válido, no aplicar filtro de tiempo
+          break;
+      }
+
+      if (fechaInicio) {
+        whereCondition.createdAt = {
+          [db.Sequelize.Op.gte]: fechaInicio
+        };
+      }
+    }
+
     const prestamos = await Prestamo.findAll({
+      where: whereCondition,
       include: [
         { 
           model: Reserva, 
@@ -35,10 +163,18 @@ exports.findAll = async (req, res) => {
           as: 'producto',
           attributes: ['id', 'nombre_producto']
         }
-      ]
+      ],
+      order: [['createdAt', 'DESC']]
     });
-    res.status(200).json(prestamos);
+
+    res.status(200).json({
+      success: true,
+      data: prestamos,
+      filtro_aplicado: timeFilter || 'todos',
+      total: prestamos.length
+    });
   } catch (error) {
+    console.error('Error al obtener los préstamos:', error);
     res.status(500).json({ error: 'Error al obtener los préstamos' });
   }
 };

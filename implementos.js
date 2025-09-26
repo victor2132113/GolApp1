@@ -136,10 +136,9 @@ function renderImplementos(implementosToRender) {
 function createImplementoRow(implemento) {
     const row = document.createElement('tr');
     
-    // Calcular disponibilidad
-    const prestado = implemento.Prestamos ? 
-        implemento.Prestamos.reduce((sum, prestamo) => sum + prestamo.cantidad_prestada, 0) : 0;
-    const disponible = implemento.cantidad_total - prestado;
+    // Usar los valores calculados por el backend
+    const prestado = implemento.cantidad_prestada || 0;
+    const disponible = implemento.cantidad_disponible || (implemento.cantidad_total - prestado);
     
     // Determinar estado
     let estado, estadoClass;
@@ -401,9 +400,15 @@ function goToAdmin() {
     window.location.href = 'index.html';
 }
 
+// Función para navegar a la vista de préstamos
+function goToPrestamos() {
+    window.location.href = 'prestamo.html';
+}
+
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.saveImplemento = saveImplemento;
 window.editImplemento = editImplemento;
 window.deleteImplemento = deleteImplemento;
 window.goToAdmin = goToAdmin;
+window.goToPrestamos = goToPrestamos;

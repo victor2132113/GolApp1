@@ -410,7 +410,7 @@
                         </div>
                     </div>
                     <div class="cancha-precio">
-                        $${cancha.precio_por_hora || '50,000'} COP/hora
+                        $${cancha.tipoCancha?.precio ? Number(cancha.tipoCancha.precio).toLocaleString('es-CO') : '50,000'} COP/hora
                     </div>
                     <button class="reservar-btn" ${!disponible ? 'disabled' : ''} 
                             onclick="reservarCancha(${cancha.id})">

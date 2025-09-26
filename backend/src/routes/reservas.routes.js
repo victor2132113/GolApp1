@@ -17,10 +17,16 @@ router.get('/ingresos-mensuales', reservasController.getMonthlyRevenue);
 // GET /api/reservas/ocupacion-promedio - Obtener ocupación promedio
 router.get('/ocupacion-promedio', reservasController.getAverageOccupancy);
 
+// GET /api/reservas/horarios-ocupados - Obtener horarios ocupados por cancha y fecha
+router.get('/horarios-ocupados', reservasController.getOccupiedTimes);
+
+// GET /api/reservas/:id/implementos - Obtener implementos prestados por reserva
+router.get('/:id/implementos', reservasController.getImplementosByReserva);
+
 // GET /api/reservas/usuario/:id - Obtener reservas por usuario
 router.get('/usuario/:id', reservasController.findByUser);
 
-// GET /api/reservas/:id
+// GET /api/reservas/:id - DEBE IR AL FINAL para evitar conflictos
 router.get('/:id', reservasController.findOne);
 
 // PUT /api/reservas/:id

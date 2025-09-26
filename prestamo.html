@@ -117,6 +117,34 @@
             color: #666;
         }
 
+        .filter-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 15px;
+        }
+
+        .filter-section label {
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .filter-section select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-section select:focus {
+            outline: none;
+            border-color: #FF9800;
+        }
+
         .action-buttons {
             display: flex;
             gap: 10px;
@@ -540,6 +568,16 @@
             <div class="search-box">
                 <input type="text" id="search-input" placeholder="Buscar préstamos...">
                 <i class="fas fa-search search-icon"></i>
+            </div>
+            <div class="filter-section">
+                <label for="time-filter">Filtrar por tiempo:</label>
+                <select id="time-filter" onchange="applyTimeFilter()">
+                    <option value="">Todos los préstamos</option>
+                    <option value="3days">Últimos 3 días</option>
+                    <option value="week">Última semana</option>
+                    <option value="month">Último mes</option>
+                    <option value="year">Último año</option>
+                </select>
             </div>
             <div class="action-buttons">
                 <button class="btn btn-secondary" onclick="markOverdue()">

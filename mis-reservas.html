@@ -489,6 +489,115 @@
             line-height: 1.4;
         }
 
+        /* Estilos para el componente de implementos prestados */
+        .implementos-section {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #4a7c59;
+        }
+
+        .implementos-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.8rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .implementos-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+            color: #2d5a27;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .implementos-toggle {
+            color: #4a7c59;
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .implementos-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .implementos-list {
+            display: none;
+            margin-top: 0.5rem;
+        }
+
+        .implementos-list.show {
+            display: block;
+        }
+
+        .implemento-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .implemento-item:last-child {
+            border-bottom: none;
+        }
+
+        .implemento-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .implemento-nombre {
+            font-weight: 500;
+            color: #333;
+            font-size: 0.85rem;
+        }
+
+        .implemento-cantidad {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .implemento-estado {
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .implemento-estado.activo {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .implemento-estado.devuelto {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .no-implementos {
+            color: #666;
+            font-size: 0.85rem;
+            font-style: italic;
+            text-align: center;
+            padding: 0.5rem 0;
+        }
+
+        .loading-implementos {
+            color: #666;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 0.5rem 0;
+        }
+
         @media (max-width: 768px) {
             .filter-controls {
                 flex-direction: column;
@@ -1039,6 +1148,21 @@
                 
                 ${observacionesHtml}
                 
+                <div class="implementos-section">
+                    <div class="implementos-header" onclick="toggleImplementos(${reserva.id})">
+                        <h4 class="implementos-title">
+                            <i class="fas fa-tools"></i>
+                            Implementos Prestados
+                        </h4>
+                        <i class="fas fa-chevron-down implementos-toggle" id="toggle-${reserva.id}"></i>
+                    </div>
+                    <div class="implementos-list" id="implementos-${reserva.id}">
+                        <div class="loading-implementos">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando implementos...
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="reserva-precio">
                     Total: $${precio.toLocaleString()} COP
                 </div>
@@ -1172,6 +1296,99 @@
             if (event.target === modal) {
                 closeCancelModal();
             }
+        }
+
+        // Función para alternar la visualización de implementos
+        function toggleImplementos(reservaId) {
+            const implementosList = document.getElementById(`implementos-${reservaId}`);
+            const toggle = document.getElementById(`toggle-${reservaId}`);
+            
+            if (implementosList.classList.contains('show')) {
+                implementosList.classList.remove('show');
+                toggle.classList.remove('expanded');
+            } else {
+                implementosList.classList.add('show');
+                toggle.classList.add('expanded');
+                
+                // Cargar implementos si no se han cargado aún
+                if (!implementosList.dataset.loaded) {
+                    cargarImplementos(reservaId);
+                }
+            }
+        }
+
+        // Función para cargar implementos de una reserva
+        async function cargarImplementos(reservaId) {
+            const implementosList = document.getElementById(`implementos-${reservaId}`);
+            
+            try {
+                console.log('Cargando implementos para reserva:', reservaId);
+                
+                const response = await fetch(`http://localhost:3000/api/reservas/${reservaId}/implementos`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Implementos recibidos:', data);
+                    
+                    if (data.success && data.data && data.data.length > 0) {
+                        mostrarImplementos(implementosList, data.data);
+                    } else {
+                        mostrarSinImplementos(implementosList);
+                    }
+                } else {
+                    console.error('Error al cargar implementos:', response.statusText);
+                    mostrarErrorImplementos(implementosList);
+                }
+                
+                implementosList.dataset.loaded = 'true';
+                
+            } catch (error) {
+                console.error('Error al cargar implementos:', error);
+                mostrarErrorImplementos(implementosList);
+                implementosList.dataset.loaded = 'true';
+            }
+        }
+
+        // Función para mostrar la lista de implementos
+        function mostrarImplementos(container, implementos) {
+            container.innerHTML = '';
+            
+            implementos.forEach(implemento => {
+                const implementoItem = document.createElement('div');
+                implementoItem.className = 'implemento-item';
+                
+                implementoItem.innerHTML = `
+                    <div class="implemento-info">
+                        <div class="implemento-nombre">${implemento.nombre}</div>
+                        <div class="implemento-cantidad">Cantidad: ${implemento.cantidad}</div>
+                    </div>
+                    <div class="implemento-estado ${implemento.estado}">
+                        ${implemento.estado === 'activo' ? 'Activo' : 'Devuelto'}
+                    </div>
+                `;
+                
+                container.appendChild(implementoItem);
+            });
+        }
+
+        // Función para mostrar mensaje cuando no hay implementos
+        function mostrarSinImplementos(container) {
+            container.innerHTML = `
+                <div class="no-implementos">
+                    <i class="fas fa-info-circle"></i>
+                    No hay implementos prestados para esta reserva
+                </div>
+            `;
+        }
+
+        // Función para mostrar error al cargar implementos
+        function mostrarErrorImplementos(container) {
+            container.innerHTML = `
+                <div class="no-implementos">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error al cargar los implementos
+                </div>
+            `;
         }
     </script>
 </body>

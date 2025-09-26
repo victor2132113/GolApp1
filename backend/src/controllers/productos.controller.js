@@ -45,14 +45,19 @@ exports.findAll = async (req, res) => {
       include: [{
         model: Prestamo,
         as: 'prestamos',
-        required: false
+        required: false,
+        where: {
+          estado: 'activo'  // Solo contar préstamos activos
+        }
       }],
       order: [['nombre_producto', 'ASC']]
     });
 
     // Calcular cantidad disponible para cada producto
     const productosConDisponibilidad = productos.map(producto => {
-      const cantidadPrestada = producto.prestamos.reduce((total, prestamo) => {
+      // Filtrar solo préstamos activos en caso de que la consulta no haya funcionado correctamente
+      const prestamosActivos = producto.prestamos ? producto.prestamos.filter(p => p.estado === 'activo') : [];
+      const cantidadPrestada = prestamosActivos.reduce((total, prestamo) => {
         return total + prestamo.cantidad_prestada;
       }, 0);
       
@@ -84,7 +89,10 @@ exports.findOne = async (req, res) => {
       include: [{
         model: Prestamo,
         as: 'prestamos',
-        required: false
+        required: false,
+        where: {
+          estado: 'activo'  // Solo contar préstamos activos
+        }
       }]
     });
 
@@ -94,8 +102,9 @@ exports.findOne = async (req, res) => {
       });
     }
 
-    // Calcular disponibilidad
-    const cantidadPrestada = producto.prestamos.reduce((total, prestamo) => {
+    // Calcular disponibilidad - filtrar solo préstamos activos
+    const prestamosActivos = producto.prestamos ? producto.prestamos.filter(p => p.estado === 'activo') : [];
+    const cantidadPrestada = prestamosActivos.reduce((total, prestamo) => {
       return total + prestamo.cantidad_prestada;
     }, 0);
 
@@ -217,7 +226,10 @@ exports.getStats = async (req, res) => {
       include: [{
         model: Prestamo,
         as: 'prestamos',
-        required: false
+        required: false,
+        where: {
+          estado: 'activo'  // Solo contar préstamos activos
+        }
       }]
     });
 
@@ -226,7 +238,9 @@ exports.getStats = async (req, res) => {
 
     productos.forEach(producto => {
       totalStock += producto.cantidad_total;
-      const prestado = producto.prestamos.reduce((total, prestamo) => {
+      // Filtrar solo préstamos activos
+      const prestamosActivos = producto.prestamos ? producto.prestamos.filter(p => p.estado === 'activo') : [];
+      const prestado = prestamosActivos.reduce((total, prestamo) => {
         return total + prestamo.cantidad_prestada;
       }, 0);
       totalPrestado += prestado;

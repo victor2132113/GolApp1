@@ -108,7 +108,7 @@
         }
 
         .btn-refresh {
-            background: linear-gradient(135deg, #48bb78, #38a169);
+            background: linear-gradient(135deg, #4299e1, #3182ce);
             color: white;
             border: none;
             padding: 12px 24px;
@@ -121,7 +121,7 @@
 
         .btn-refresh:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
+            box-shadow: 0 5px 15px rgba(66, 153, 225, 0.3);
         }
 
         .stats-overview {
@@ -171,7 +171,7 @@
         }
 
         .stat-increase {
-            color: #38a169;
+            color: #4299e1;
         }
 
         .stat-decrease {
@@ -332,9 +332,9 @@
         <div class="header">
             <h1>📊 Reportes y Estadísticas</h1>
             <div class="nav-buttons">
-                <a href="index.html" class="nav-btn">Dashboard</a>
-                <a href="reservas.html" class="nav-btn">Reservas</a>
-                <a href="canchas.html" class="nav-btn">Canchas</a>
+                <a href="../index.html" class="nav-btn">Dashboard</a>
+                <a href="../reservas.html" class="nav-btn">Reservas</a>
+                <a href="../canchas.html" class="nav-btn">Canchas</a>
                 <a href="usuarios.html" class="nav-btn">Usuarios</a>
             </div>
             <div class="user-info">
@@ -358,10 +358,10 @@
             <div class="filter-group">
                 <label class="filter-label">Período</label>
                 <select id="periodFilter" class="filter-select">
-                    <option value="7">Últimos 7 días</option>
-                    <option value="30" selected>Últimos 30 días</option>
-                    <option value="90">Últimos 3 meses</option>
-                    <option value="365">Último año</option>
+                    <option value="7">Semana (7 días)</option>
+                    <option value="30">Mes (30 días)</option>
+                    <option value="year" selected>Año Actual</option>
+                    <option value="365">Año Completo (365 días)</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -440,7 +440,6 @@
                     <h3 class="table-title">Top 10 Usuarios Más Activos</h3>
                     <div class="export-buttons">
                         <button class="btn-export" onclick="exportToCSV('topUsers')"> CSV</button>
-                        <button class="btn-export" onclick="exportToPDF('topUsers')"> PDF</button>
                     </div>
                 </div>
                 <table class="data-table" id="topUsersTable">
@@ -463,7 +462,6 @@
                     <h3 class="table-title">Reservas Recientes</h3>
                     <div class="export-buttons">
                         <button class="btn-export" onclick="exportToCSV('recentReservations')"> CSV</button>
-                        <button class="btn-export" onclick="exportToPDF('recentReservations')"> PDF</button>
                     </div>
                 </div>
                 <table class="data-table" id="recentReservationsTable">
@@ -485,14 +483,14 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:3100/api';
+        const API_BASE_URL = 'http://localhost:3000/api';
         let charts = {};
 
         // Verificar autenticación
         function checkAuth() {
             const user = localStorage.getItem('golapp_user');
             if (!user) {
-                window.location.href = 'login.html';
+                window.location.href = '../login.html';
                 return false;
             }
             
@@ -524,9 +522,9 @@
 
         // Logout
         function logout() {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            window.location.href = 'login.html';
+            localStorage.removeItem('golapp_user');
+            localStorage.removeItem('golapp_token');
+            window.location.href = '../login.html';
         }
 
         // Cargar reportes
@@ -548,24 +546,105 @@
             }
         }
 
+        // Función para obtener el rango de fechas según el filtro seleccionado
+        function getDateRange() {
+            const periodFilter = document.getElementById('periodFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            const today = new Date();
+            let startDate, endDate;
+            
+            if (dateFrom && dateTo) {
+                // Si hay fechas personalizadas, usarlas
+                startDate = new Date(dateFrom);
+                endDate = new Date(dateTo);
+                endDate.setHours(23, 59, 59, 999); // Incluir todo el día final
+            } else if (periodFilter === 'year') {
+                // Para ingresos totales del año actual
+                startDate = new Date(today.getFullYear(), 0, 1); // 1 de enero del año actual
+                endDate = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999); // 31 de diciembre del año actual
+            } else {
+                // Usar el filtro de período predefinido (para compatibilidad con otros filtros)
+                const days = parseInt(periodFilter);
+                endDate = new Date(today);
+                startDate = new Date(today.getTime() - (days * 24 * 60 * 60 * 1000));
+            }
+            
+            console.log('📅 Rango de fechas:', { startDate, endDate, period: periodFilter });
+            return { startDate, endDate };
+        }
+
+        // Función para filtrar datos por fecha
+        function filterDataByDate(data, dateField = 'fecha') {
+            const { startDate, endDate } = getDateRange();
+            
+            return data.filter(item => {
+                const itemDate = new Date(item[dateField] || item.fecha_reserva || item.fecha);
+                return itemDate >= startDate && itemDate <= endDate;
+            });
+        }
+
         // Cargar estadísticas generales
         async function loadStats() {
             try {
+                console.log('🔄 Cargando estadísticas...');
                 const [reservasRes, usuariosRes, canchasRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/reservas`),
                     fetch(`${API_BASE_URL}/usuarios`),
                     fetch(`${API_BASE_URL}/canchas`)
                 ]);
 
+                console.log('📊 Respuestas de API:', {
+                    reservas: reservasRes.status,
+                    usuarios: usuariosRes.status,
+                    canchas: canchasRes.status
+                });
+
                 const reservas = await reservasRes.json();
                 const usuarios = await usuariosRes.json();
                 const canchas = await canchasRes.json();
 
-                // Calcular estadísticas
-                const totalReservations = reservas.length;
-                const totalRevenue = reservas.reduce((sum, r) => sum + (r.precio || 0), 0);
-                const activeFields = canchas.filter(c => c.estado === 'disponible').length;
-                const activeUsers = usuarios.filter(u => u.estado === 'activo').length;
+                console.log('📈 Datos obtenidos:', {
+                    reservas: reservas.length,
+                    usuarios: usuarios.length,
+                    canchas: canchas.length
+                });
+
+                // Filtrar reservas para el año actual (ingresos totales del año)
+                const currentYear = new Date().getFullYear();
+                const yearlyReservas = reservas.filter(reserva => {
+                    const reservaDate = new Date(reserva.fecha || reserva.fecha_reserva);
+                    return reservaDate.getFullYear() === currentYear;
+                });
+                console.log('📊 Reservas del año actual:', yearlyReservas.length);
+
+                // Calcular estadísticas con datos del año actual
+                const totalReservations = yearlyReservas.length;
+                const totalRevenue = yearlyReservas.reduce((sum, r) => sum + (parseFloat(r.totalPrice) || 0), 0);
+                const activeFields = canchas.filter(c => c.estado === 'disponible' || c.estado === 'activa').length;
+                const activeUsers = usuarios.filter(u => u.estado === 'activo' || !u.estado).length;
+
+                console.log('📊 Estadísticas calculadas:', {
+                    totalReservations,
+                    totalRevenue,
+                    activeFields,
+                    activeUsers
+                });
+
+                // Calcular cambios porcentuales (comparar con año anterior)
+                const previousYear = currentYear - 1;
+                const previousYearReservas = reservas.filter(reserva => {
+                    const reservaDate = new Date(reserva.fecha || reserva.fecha_reserva);
+                    return reservaDate.getFullYear() === previousYear;
+                });
+                
+                const previousTotal = previousYearReservas.length;
+                const previousRevenue = previousYearReservas.reduce((sum, r) => sum + (parseFloat(r.totalPrice) || 0), 0);
+
+                // Calcular porcentajes de cambio
+                const reservationsChange = previousTotal > 0 ? ((totalReservations - previousTotal) / previousTotal * 100) : 0;
+                const revenueChange = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue * 100) : 0;
 
                 // Actualizar UI
                 document.getElementById('totalReservations').textContent = totalReservations;
@@ -573,59 +652,178 @@
                 document.getElementById('activeFields').textContent = activeFields;
                 document.getElementById('activeUsers').textContent = activeUsers;
 
-                // Simular cambios porcentuales (en una app real, compararías con período anterior)
-                document.getElementById('reservationsChange').textContent = '+12%';
-                document.getElementById('revenueChange').textContent = '+8%';
+                // Actualizar indicadores de cambio
+                document.getElementById('reservationsChange').textContent = `${reservationsChange >= 0 ? '+' : ''}${reservationsChange.toFixed(1)}%`;
+                document.getElementById('revenueChange').textContent = `${revenueChange >= 0 ? '+' : ''}${revenueChange.toFixed(1)}%`;
+                
+                // Colores para los cambios
+                document.getElementById('reservationsChange').style.color = reservationsChange >= 0 ? '#10b981' : '#ef4444';
+                document.getElementById('revenueChange').style.color = revenueChange >= 0 ? '#10b981' : '#ef4444';
+
+                // Mantener valores fijos para campos y usuarios (no dependen del período)
                 document.getElementById('fieldsChange').textContent = '0%';
                 document.getElementById('usersChange').textContent = '+15%';
 
+                console.log('📊 Estadísticas actualizadas con filtros:', { 
+                    totalReservations, 
+                    totalRevenue, 
+                    reservationsChange: reservationsChange.toFixed(1) + '%',
+                    revenueChange: revenueChange.toFixed(1) + '%'
+                });
+
             } catch (error) {
-                console.error('Error cargando estadísticas:', error);
+                console.error('❌ Error cargando estadísticas:', error);
+                // Mostrar valores por defecto en caso de error
+                document.getElementById('totalReservations').textContent = '0';
+                document.getElementById('totalRevenue').textContent = '$0';
+                document.getElementById('activeFields').textContent = '0';
+                document.getElementById('activeUsers').textContent = '0';
             }
         }
 
         // Cargar gráficos
         async function loadCharts() {
             try {
+                console.log('📊 Cargando gráficos...');
                 const reservasRes = await fetch(`${API_BASE_URL}/reservas`);
                 const reservas = await reservasRes.json();
 
+                console.log('📈 Datos de reservas para gráficos:', reservas.length);
+
+                // Filtrar reservas para el año actual (para gráficos)
+                const currentYear = new Date().getFullYear();
+                const yearlyReservas = reservas.filter(reserva => {
+                    const reservaDate = new Date(reserva.fecha || reserva.fecha_reserva);
+                    return reservaDate.getFullYear() === currentYear;
+                });
+                console.log('📊 Reservas del año actual para gráficos:', yearlyReservas.length);
+
                 // Gráfico de reservas por día
-                createReservationsChart(reservas);
+                createReservationsChart(yearlyReservas);
                 
                 // Gráfico de ingresos por mes
-                createRevenueChart(reservas);
+                createRevenueChart(yearlyReservas);
                 
                 // Gráfico de canchas más populares
-                createFieldsChart(reservas);
+                createFieldsChart(yearlyReservas);
                 
                 // Gráfico de horarios de mayor demanda
-                createHoursChart(reservas);
+                createHoursChart(yearlyReservas);
 
             } catch (error) {
-                console.error('Error cargando gráficos:', error);
+                console.error('❌ Error cargando gráficos:', error);
+                // Crear gráficos vacíos en caso de error
+                createEmptyCharts();
             }
         }
 
-        // Crear gráfico de reservas por día
+        // Crear gráficos vacíos en caso de error
+        function createEmptyCharts() {
+            const chartIds = ['reservationsChart', 'revenueChart', 'fieldsChart', 'hoursChart'];
+            chartIds.forEach(id => {
+                const ctx = document.getElementById(id);
+                if (ctx) {
+                    const chart = new Chart(ctx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['Sin datos'],
+                            datasets: [{
+                                label: 'Sin datos disponibles',
+                                data: [0],
+                                backgroundColor: '#e2e8f0'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Crear gráfico de reservas por día/mes según el período
         function createReservationsChart(reservas) {
             const ctx = document.getElementById('reservationsChart').getContext('2d');
             
-            // Procesar datos por día (últimos 7 días)
-            const last7Days = [];
-            const reservationCounts = [];
+            console.log('📅 Creando gráfico de reservas...');
             
-            for (let i = 6; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().split('T')[0];
-                last7Days.push(date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }));
+            // Obtener el rango de fechas del filtro
+            const { startDate, endDate } = getDateRange();
+            const periodDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            
+            let labels = [];
+            let reservationCounts = [];
+            let chartTitle = 'Reservas';
+            
+            if (periodDays <= 7) {
+                // Semana: mostrar por días de la semana
+                const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                labels = daysOfWeek;
+                reservationCounts = new Array(7).fill(0);
+                chartTitle = 'Reservas por Día de la Semana';
                 
-                const count = reservas.filter(r => 
-                    r.fecha && r.fecha.startsWith(dateStr)
-                ).length;
-                reservationCounts.push(count);
+                reservas.forEach(r => {
+                    const fechaReserva = r.fecha || r.fecha_reserva;
+                    if (fechaReserva) {
+                        const date = new Date(fechaReserva);
+                        const dayOfWeek = date.getDay(); // 0 = Domingo, 1 = Lunes, etc.
+                        const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Ajustar para que Lunes = 0
+                        reservationCounts[adjustedDay]++;
+                    }
+                });
+                
+            } else if (periodDays <= 180) {
+                // 6 meses: mostrar por mes
+                const months = [];
+                const monthCounts = {};
+                chartTitle = 'Reservas por Mes (Últimos 6 Meses)';
+                
+                // Generar últimos 6 meses
+                for (let i = 5; i >= 0; i--) {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - i);
+                    const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
+                    const monthLabel = date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+                    months.push(monthLabel);
+                    monthCounts[monthKey] = 0;
+                }
+                
+                // Contar reservas por mes
+                reservas.forEach(r => {
+                    const fechaReserva = r.fecha || r.fecha_reserva;
+                    if (fechaReserva) {
+                        const monthKey = fechaReserva.slice(0, 7);
+                        if (monthCounts.hasOwnProperty(monthKey)) {
+                            monthCounts[monthKey]++;
+                        }
+                    }
+                });
+                
+                labels = months;
+                reservationCounts = Object.values(monthCounts);
+                
+            } else {
+                // Año completo: mostrar por mes del año
+                const monthsOfYear = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                labels = monthsOfYear;
+                reservationCounts = new Array(12).fill(0);
+                chartTitle = 'Reservas por Mes del Año';
+                
+                reservas.forEach(r => {
+                    const fechaReserva = r.fecha || r.fecha_reserva;
+                    if (fechaReserva) {
+                        const date = new Date(fechaReserva);
+                        const month = date.getMonth(); // 0 = Enero, 11 = Diciembre
+                        reservationCounts[month]++;
+                    }
+                });
             }
+
+            console.log('📅 Datos del gráfico:', { chartTitle, labels, reservationCounts, periodDays });
 
             if (charts.reservations) {
                 charts.reservations.destroy();
@@ -634,9 +832,9 @@
             charts.reservations = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: last7Days,
+                    labels: labels,
                     datasets: [{
-                        label: 'Reservas',
+                        label: chartTitle,
                         data: reservationCounts,
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
@@ -650,6 +848,14 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        title: {
+                            display: true,
+                            text: chartTitle,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
                         }
                     },
                     scales: {
@@ -665,29 +871,97 @@
         }
 
         // Crear gráfico de ingresos por mes
+        // Crear gráfico de ingresos por día/mes según el período
         function createRevenueChart(reservas) {
             const ctx = document.getElementById('revenueChart').getContext('2d');
             
-            // Procesar datos por mes (últimos 6 meses)
-            const months = [];
-            const revenues = [];
+            console.log('💰 Creando gráfico de ingresos...');
+            console.log('💰 Datos de reservas recibidos:', reservas);
+            console.log('💰 Estructura de primera reserva:', reservas[0]);
             
-            for (let i = 5; i >= 0; i--) {
-                const date = new Date();
-                date.setMonth(date.getMonth() - i);
-                months.push(date.toLocaleDateString('es-ES', { month: 'short' }));
+            // Obtener el rango de fechas del filtro
+            const { startDate, endDate } = getDateRange();
+            const periodDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            
+            let labels = [];
+            let revenues = [];
+            let chartTitle = 'Ingresos';
+            
+            if (periodDays <= 7) {
+                // Semana: mostrar por días de la semana
+                const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                labels = daysOfWeek;
+                revenues = new Array(7).fill(0);
+                chartTitle = 'Ingresos por Día de la Semana';
                 
-                const monthRevenue = reservas
-                    .filter(r => {
-                        if (!r.fecha) return false;
-                        const reservaDate = new Date(r.fecha);
-                        return reservaDate.getMonth() === date.getMonth() && 
-                               reservaDate.getFullYear() === date.getFullYear();
-                    })
-                    .reduce((sum, r) => sum + (r.precio || 0), 0);
+                reservas.forEach(r => {
+                    const fechaReserva = r.fecha || r.fecha_reserva;
+                    const precio = parseFloat(r.totalPrice) || 0;
+                    console.log('💰 Procesando reserva:', { fechaReserva, precio, totalPrice: r.totalPrice, reserva: r });
+                    
+                    if (fechaReserva && precio > 0) {
+                        const date = new Date(fechaReserva);
+                        const dayOfWeek = date.getDay(); // 0 = Domingo, 1 = Lunes, etc.
+                        const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Ajustar para que Lunes = 0
+                        revenues[adjustedDay] += precio;
+                        console.log('💰 Sumando al día', adjustedDay, ':', precio);
+                    }
+                });
                 
-                revenues.push(monthRevenue);
+            } else if (periodDays <= 180) {
+                // 6 meses: mostrar por mes
+                const months = [];
+                const monthRevenues = {};
+                chartTitle = 'Ingresos por Mes (Últimos 6 Meses)';
+                
+                // Generar últimos 6 meses
+                for (let i = 5; i >= 0; i--) {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - i);
+                    const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
+                    const monthLabel = date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+                    months.push(monthLabel);
+                    monthRevenues[monthKey] = 0;
+                }
+                
+                // Sumar ingresos por mes
+                reservas.forEach(r => {
+                    const fechaReserva = r.fecha || r.fecha_reserva;
+                    const precio = parseFloat(r.totalPrice) || 0;
+                    
+                    if (fechaReserva && precio > 0) {
+                        const monthKey = fechaReserva.slice(0, 7);
+                        if (monthRevenues.hasOwnProperty(monthKey)) {
+                            monthRevenues[monthKey] += precio;
+                            console.log('💰 Sumando al mes', monthKey, ':', precio);
+                        }
+                    }
+                });
+                
+                labels = months;
+                revenues = Object.values(monthRevenues);
+                
+            } else {
+                // Año completo: mostrar por mes del año
+                const monthsOfYear = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                labels = monthsOfYear;
+                revenues = new Array(12).fill(0);
+                chartTitle = 'Ingresos por Mes del Año';
+                
+                reservas.forEach(r => {
+                    const fechaReserva = r.fecha || r.fecha_reserva;
+                    const precio = parseFloat(r.totalPrice) || 0;
+                    
+                    if (fechaReserva && precio > 0) {
+                        const date = new Date(fechaReserva);
+                        const month = date.getMonth(); // 0 = Enero, 11 = Diciembre
+                        revenues[month] += precio;
+                        console.log('💰 Sumando al mes', month, ':', precio);
+                    }
+                });
             }
+
+            console.log('💰 Datos del gráfico de ingresos:', { chartTitle, labels, revenues, periodDays });
 
             if (charts.revenue) {
                 charts.revenue.destroy();
@@ -696,12 +970,12 @@
             charts.revenue = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: months,
+                    labels: labels,
                     datasets: [{
                         label: 'Ingresos',
                         data: revenues,
-                        backgroundColor: 'rgba(72, 187, 120, 0.8)',
-                        borderColor: '#48bb78',
+                        backgroundColor: 'rgba(66, 153, 225, 0.8)',
+                        borderColor: '#4299e1',
                         borderWidth: 1
                     }]
                 },
@@ -709,6 +983,14 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
+                        title: {
+                            display: true,
+                            text: chartTitle,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
                         legend: {
                             display: false
                         }
@@ -732,46 +1014,91 @@
             const ctx = document.getElementById('fieldsChart').getContext('2d');
             
             try {
+                console.log('🏟️ Cargando datos de canchas...');
                 const canchasRes = await fetch(`${API_BASE_URL}/canchas`);
                 const canchas = await canchasRes.json();
                 
+                console.log('🏟️ Canchas obtenidas:', canchas.length);
+                console.log('📊 Reservas para análisis:', reservas.length);
+                
                 // Contar reservas por cancha
                 const canchaStats = canchas.map(cancha => {
-                    const count = reservas.filter(r => r.cancha_id === cancha.id).length;
-                    return { nombre: cancha.nombre, count };
+                    const count = reservas.filter(r => r.id_cancha === cancha.id).length;
+                    return { nombre: cancha.nombre_cancha || `Cancha ${cancha.id}`, count };
                 }).sort((a, b) => b.count - a.count).slice(0, 5);
+
+                console.log('📈 Estadísticas de canchas:', canchaStats);
 
                 if (charts.fields) {
                     charts.fields.destroy();
                 }
 
+                // Si no hay datos, mostrar gráfico vacío
+                if (canchaStats.every(c => c.count === 0)) {
+                    charts.fields = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Sin reservas'],
+                            datasets: [{
+                                data: [1],
+                                backgroundColor: ['#e2e8f0']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    });
+                } else {
+                    charts.fields = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: canchaStats.map(c => c.nombre),
+                            datasets: [{
+                                data: canchaStats.map(c => c.count),
+                                backgroundColor: [
+                                    '#667eea',
+                                    '#764ba2',
+                                    '#4299e1',
+                                    '#f093fb',
+                                    '#f56565'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('❌ Error creando gráfico de canchas:', error);
+                // Crear gráfico vacío en caso de error
                 charts.fields = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
-                        labels: canchaStats.map(c => c.nombre),
+                        labels: ['Error al cargar'],
                         datasets: [{
-                            data: canchaStats.map(c => c.count),
-                            backgroundColor: [
-                                '#667eea',
-                                '#764ba2',
-                                '#48bb78',
-                                '#4299e1',
-                                '#f56565'
-                            ]
+                            data: [1],
+                            backgroundColor: ['#f56565']
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
+                            legend: { position: 'bottom' }
                         }
                     }
                 });
-            } catch (error) {
-                console.error('Error creando gráfico de canchas:', error);
             }
         }
 
@@ -779,18 +1106,24 @@
         function createHoursChart(reservas) {
             const ctx = document.getElementById('hoursChart').getContext('2d');
             
+            console.log('⏰ Creando gráfico de horarios...');
+            
             // Procesar datos por hora
             const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
             const hourCounts = new Array(24).fill(0);
             
             reservas.forEach(reserva => {
-                if (reserva.horaInicio) {
-                    const hour = parseInt(reserva.horaInicio.split(':')[0]);
+                // Intentar diferentes formatos de hora
+                let horaInicio = reserva.horaInicio || reserva.hora_inicio || reserva.hora;
+                if (horaInicio) {
+                    const hour = parseInt(horaInicio.split(':')[0]);
                     if (hour >= 0 && hour < 24) {
                         hourCounts[hour]++;
                     }
                 }
             });
+
+            console.log('⏰ Conteo por horas:', hourCounts);
 
             if (charts.hours) {
                 charts.hours.destroy();
@@ -843,20 +1176,32 @@
         // Cargar top usuarios
         async function loadTopUsers() {
             try {
-                const [usuariosRes, reservasRes] = await Promise.all([
+                const [usuariosRes, reservasRes, canchasRes, tarifasRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/usuarios`),
-                    fetch(`${API_BASE_URL}/reservas`)
+                    fetch(`${API_BASE_URL}/reservas`),
+                    fetch(`${API_BASE_URL}/canchas`),
+                    fetch(`${API_BASE_URL}/tarifas`)
                 ]);
 
                 const usuarios = await usuariosRes.json();
                 const reservas = await reservasRes.json();
+                const canchas = await canchasRes.json();
+                const tarifas = await tarifasRes.json();
+
+                console.log('📊 Datos para usuarios activos:', { usuarios: usuarios.length, reservas: reservas.length, canchas: canchas.length, tarifas: tarifas.length });
 
                 // Calcular estadísticas por usuario
                 const userStats = usuarios.map(usuario => {
-                    const userReservas = reservas.filter(r => r.usuario_id === usuario.id);
-                    const totalGastado = userReservas.reduce((sum, r) => sum + (r.precio || 0), 0);
+                    const userReservas = reservas.filter(r => r.id_usuario === usuario.id);
+                    
+                    // Calcular total gastado usando totalPrice de cada reserva
+                    const totalGastado = userReservas.reduce((sum, r) => {
+                        return sum + (parseFloat(r.totalPrice) || 0);
+                    }, 0);
+                    
+                    // Obtener fecha de última reserva
                     const ultimaReserva = userReservas.length > 0 
-                        ? Math.max(...userReservas.map(r => new Date(r.fecha || 0).getTime()))
+                        ? Math.max(...userReservas.map(r => new Date(r.fecha_reserva).getTime()))
                         : 0;
 
                     return {
@@ -867,11 +1212,13 @@
                     };
                 }).sort((a, b) => b.reservasCount - a.reservasCount).slice(0, 10);
 
+                console.log('📈 Estadísticas de usuarios:', userStats);
+
                 const tbody = document.getElementById('topUsersBody');
                 tbody.innerHTML = userStats.map(user => `
                     <tr>
-                        <td>${user.nombre} ${user.apellido}</td>
-                        <td>${user.email}</td>
+                        <td>${user.nombre || 'Sin nombre'}</td>
+                        <td>${user.correo || user.email || 'Sin email'}</td>
                         <td>${user.reservasCount}</td>
                         <td>$${user.totalGastado.toLocaleString()}</td>
                         <td>${user.ultimaReserva ? user.ultimaReserva.toLocaleDateString('es-ES') : 'Nunca'}</td>
@@ -896,25 +1243,66 @@
                 const usuarios = await usuariosRes.json();
                 const canchas = await canchasRes.json();
 
-                // Ordenar por fecha más reciente y tomar las primeras 10
-                const recentReservations = reservas
-                    .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0))
+                console.log('🔍 DEBUG - Total reservas obtenidas:', reservas.length);
+                console.log('🔍 DEBUG - Todas las reservas:', reservas);
+                
+                // Buscar específicamente reservas del 26/9/2025
+                const reservas26Sept = reservas.filter(r => {
+                    const fecha = r.fecha_reserva || r.fecha;
+                    if (fecha) {
+                        const fechaObj = new Date(fecha);
+                        return fechaObj.getDate() === 26 && fechaObj.getMonth() === 8 && fechaObj.getFullYear() === 2025; // Mes 8 = Septiembre
+                    }
+                    return false;
+                });
+                console.log('🔍 DEBUG - Reservas del 26/9/2025 encontradas:', reservas26Sept.length, reservas26Sept);
+
+                // Mostrar información de ordenamiento
+                console.log('🔍 DEBUG - Información de IDs y fechas de creación:');
+                reservas.forEach((r, index) => {
+                    if (index < 15) { // Solo mostrar las primeras 15 para no saturar
+                        console.log(`ID: ${r.id}, createdAt: ${r.createdAt}, fecha_reserva: ${r.fecha_reserva}`);
+                    }
+                });
+
+                // Ordenar por ID descendente para obtener las últimas reservas creadas
+                const sortedReservas = reservas.sort((a, b) => {
+                    // Si existe createdAt, usarlo; si no, usar ID
+                    if (a.createdAt && b.createdAt) {
+                        const dateA = new Date(a.createdAt);
+                        const dateB = new Date(b.createdAt);
+                        console.log(`🔍 Comparando createdAt: ${a.id} (${a.createdAt}) vs ${b.id} (${b.createdAt})`);
+                        return dateB - dateA;
+                    }
+                    // Ordenar por ID descendente (las más recientes tienen ID más alto)
+                    console.log(`🔍 Comparando IDs: ${a.id} vs ${b.id}`);
+                    return (b.id || 0) - (a.id || 0);
+                });
+
+                console.log('🔍 DEBUG - Primeras 10 reservas después del ordenamiento:');
+                sortedReservas.slice(0, 10).forEach((r, index) => {
+                    console.log(`${index + 1}. ID: ${r.id}, fecha_reserva: ${r.fecha_reserva}, createdAt: ${r.createdAt}`);
+                });
+
+                const recentReservations = sortedReservas
                     .slice(0, 10)
                     .map(reserva => {
-                        const usuario = usuarios.find(u => u.id === reserva.usuario_id);
-                        const cancha = canchas.find(c => c.id === reserva.cancha_id);
+                        const usuario = usuarios.find(u => u.id === reserva.id_usuario);
+                        const cancha = canchas.find(c => c.id === reserva.id_cancha);
                         return { ...reserva, usuario, cancha };
                     });
+
+                console.log('🔍 DEBUG - Reservas recientes finales:', recentReservations);
 
                 const tbody = document.getElementById('recentReservationsBody');
                 tbody.innerHTML = recentReservations.map(reserva => `
                     <tr>
-                        <td>${reserva.fecha ? new Date(reserva.fecha).toLocaleDateString('es-ES') : 'N/A'}</td>
-                        <td>${reserva.usuario ? `${reserva.usuario.nombre} ${reserva.usuario.apellido}` : 'N/A'}</td>
-                        <td>${reserva.cancha ? reserva.cancha.nombre : 'N/A'}</td>
-                        <td>${reserva.horaInicio || 'N/A'} - ${reserva.horaFin || 'N/A'}</td>
+                        <td>${reserva.fecha_reserva ? new Date(reserva.fecha_reserva).toLocaleDateString('es-ES') : 'N/A'}</td>
+                        <td>${reserva.usuario ? (reserva.usuario.nombre || 'Sin nombre') : 'N/A'}</td>
+                        <td>${reserva.cancha ? (reserva.cancha.nombre_cancha || 'Sin nombre') : 'N/A'}</td>
+                        <td>${reserva.hora_inicio || 'N/A'} - ${reserva.hora_fin || 'N/A'}</td>
                         <td><span class="user-status status-${reserva.estado || 'pendiente'}">${reserva.estado || 'Pendiente'}</span></td>
-                        <td>$${(reserva.precio || 0).toLocaleString()}</td>
+                        <td>$${(reserva.totalPrice || 0).toLocaleString()}</td>
                     </tr>
                 `).join('');
 
@@ -970,13 +1358,24 @@
             window.URL.revokeObjectURL(url);
         }
 
-        // Exportar a PDF (simulado)
-        function exportToPDF(tableType) {
-            alert('Funcionalidad de exportar a PDF en desarrollo. Por ahora puedes usar la opción de imprimir del navegador.');
-        }
+        // Event listeners para filtros
+        document.getElementById('periodFilter').addEventListener('change', function() {
+            console.log('🔄 Filtro de período cambiado:', this.value);
+            // Limpiar fechas personalizadas cuando se selecciona un período predefinido
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            loadReports();
+        });
 
-        // Event listeners
-        document.getElementById('periodFilter').addEventListener('change', loadReports);
+        document.getElementById('dateFrom').addEventListener('change', function() {
+            console.log('🔄 Fecha desde cambiada:', this.value);
+            loadReports();
+        });
+
+        document.getElementById('dateTo').addEventListener('change', function() {
+            console.log('🔄 Fecha hasta cambiada:', this.value);
+            loadReports();
+        });
 
         // Inicializar fechas
         function initializeDates() {
