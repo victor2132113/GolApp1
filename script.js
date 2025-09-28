@@ -93,7 +93,7 @@ async function loadRealData() {
                 name: cancha.nombre_cancha,
                 type: cancha.TipoCancha?.nombre || cancha.tipoCancha?.nombre || 'Fútbol',
                 capacity: cancha.capacidad,
-                pricePerHour: 50000, // Precio base, se puede obtener de tarifas
+                pricePerHour: parseInt(cancha.tipoCancha?.precio) || parseInt(cancha.TipoCancha?.precio) || 50000,
                 isActive: cancha.estado === 'disponible',
                 reservationsToday: 0, // Se calculará con las reservas
                 ubicacion: cancha.ubicacion,
@@ -197,8 +197,8 @@ function useFallbackData() {
             type: "Fútbol",
             capacity: 22,
             pricePerHour: 50000,
-            isActive: true,
-            reservationsToday: 2,
+            isActive: false,
+            reservationsToday: 0,
             ubicacion: "Sector Norte"
         }
     ];
