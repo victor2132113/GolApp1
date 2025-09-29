@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -924,6 +924,46 @@
             margin-bottom: 1rem;
         }
 
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Estilos para campos de solo lectura de horarios */
+        .readonly-field {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .readonly-field i {
+            color: #6c757d;
+        }
+
+        .readonly-field span {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1rem;
+        }
+
+        .readonly-note {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .readonly-note i {
+            margin-right: 0.25rem;
+            color: #ffc107;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -1101,11 +1141,11 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="horaInicio">
-                        <i class="fas fa-clock"></i> Hora de Inicio *
-                    </label>
-                    <select id="horaInicio" name="horaInicio" required onchange="calculatePrice()">
-                        <option value="">Selecciona una hora...</option>
+                            <label for="horaInicio">
+                                <i class="fas fa-clock"></i> Hora de Inicio *
+                            </label>
+                            <select id="horaInicio" name="horaInicio" required onchange="calculatePrice(); updatePaymentDisplay();">
+                                <option value="">Selecciona una hora...</option>
                         <option value="06:00">6:00 AM</option>
                         <option value="07:00">7:00 AM</option>
                         <option value="08:00">8:00 AM</option>
@@ -1124,14 +1164,23 @@
                         <option value="21:00">9:00 PM</option>
                         <option value="22:00">10:00 PM</option>
                     </select>
+                    <!-- Campo de solo lectura para horarios ocupados -->
+                    <div id="horaInicioReadonly" class="readonly-field" style="display: none;">
+                        <i class="fas fa-clock"></i>
+                        <span id="horaInicioText"></span>
+                        <small class="readonly-note">
+                            <i class="fas fa-info-circle"></i>
+                            No se puede cambiar el horario porque hay conflictos con otras reservas
+                        </small>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="horaFin">
-                        <i class="fas fa-clock"></i> Hora de Fin *
-                    </label>
-                    <select id="horaFin" name="horaFin" required onchange="calculatePrice()">
-                        <option value="">Selecciona la hora final...</option>
+                            <label for="horaFin">
+                                <i class="fas fa-clock"></i> Hora de Fin *
+                            </label>
+                            <select id="horaFin" name="horaFin" required onchange="calculatePrice(); updatePaymentDisplay();">
+                                <option value="">Selecciona la hora final...</option>
                         <option value="07:00">7:00 AM</option>
                         <option value="08:00">8:00 AM</option>
                         <option value="09:00">9:00 AM</option>
@@ -1150,6 +1199,15 @@
                         <option value="22:00">10:00 PM</option>
                         <option value="23:00">11:00 PM</option>
                     </select>
+                    <!-- Campo de solo lectura para horarios ocupados -->
+                    <div id="horaFinReadonly" class="readonly-field" style="display: none;">
+                        <i class="fas fa-clock"></i>
+                        <span id="horaFinText"></span>
+                        <small class="readonly-note">
+                            <i class="fas fa-info-circle"></i>
+                            No se puede cambiar el horario porque hay conflictos con otras reservas
+                        </small>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -1170,7 +1228,7 @@
 
                 <div class="form-group">
                     <label for="clienteTelefono">Teléfono del Cliente</label>
-                    <input type="tel" id="clienteTelefono" readonly>
+                    <input type="tel" id="clienteTelefono">
                 </div>
 
                 <div class="form-group">

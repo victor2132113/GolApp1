@@ -6,6 +6,7 @@ let currentUser = null;
 let paymentCompleted = false; // Nueva variable para controlar el estado del pago
 let selectedClient = null; // Variable para almacenar el cliente seleccionado
 let searchTimeout = null; // Para debounce en la búsqueda
+let autoRefreshInterval = null; // Para el auto-refresh
 
 // Verificar autenticación
 function checkAuth() {
@@ -152,6 +153,7 @@ async function loadCanchas() {
         if (response.ok) {
             canchas = await response.json();
             populateCanchaSelects();
+            console.log('🏟️ Canchas cargadas:', canchas.length);
         }
     } catch (error) {
         console.error('Error loading canchas:', error);
@@ -202,6 +204,8 @@ function updatePriceInfo() {
         
         // Calcular precio si ya hay horas seleccionadas
         calculatePrice();
+        // Actualizar información de pago después del cálculo
+        updatePaymentDisplay();
     } else {
         priceInfo.style.display = 'none';
     }
@@ -215,50 +219,116 @@ function calculatePrice() {
     const totalPriceElement = document.getElementById('totalPrice');
     const nightSurchargeNote = document.getElementById('nightSurchargeNote');
     
-    if (!canchaSelect.value || !horaInicio || !horaFin) {
-        if (totalPriceElement) totalPriceElement.textContent = '$0';
+    console.log('🧮 Calculando precio:', {
+        cancha: canchaSelect?.value,
+        horaInicio,
+        horaFin
+    });
+    
+    if (!canchaSelect?.value || !horaInicio || !horaFin) {
+        if (totalPriceElement) totalPriceElement.textContent = '$0 COP';
         if (nightSurchargeNote) nightSurchargeNote.style.display = 'none';
+        console.log('❌ Faltan datos para calcular precio');
         return 0;
     }
     
-    const selectedOption = canchaSelect.options[canchaSelect.selectedIndex];
-    const precioPorHora = parseFloat(selectedOption.dataset.precio.replace(/[^\d]/g, '')) || 0;
+    // Obtener precio de la cancha desde la relación: cancha -> tipo_cancha -> precio
+    let precioPorHora = 0;
+    const canchaId = parseInt(canchaSelect.value);
+    const cancha = canchas.find(c => c.id === canchaId);
     
-    // Calcular duración en horas
-    const inicio = new Date(`2000-01-01T${horaInicio}:00`);
-    const fin = new Date(`2000-01-01T${horaFin}:00`);
+    console.log('🔍 Datos de cancha encontrada:', cancha);
     
-    if (fin <= inicio) {
-        alert('La hora de fin debe ser posterior a la hora de inicio');
-        document.getElementById('horaFin').value = '';
+    if (cancha && cancha.tipoCancha && cancha.tipoCancha.precio) {
+        // El precio puede venir como string con formato "$XX,XXX" o solo números
+        const precioStr = cancha.tipoCancha.precio.toString();
+        // Extraer solo números y convertir a float
+        precioPorHora = parseFloat(precioStr.replace(/[^\d.]/g, '')) || 0;
+        
+        console.log('💰 Precio extraído:', {
+            original: precioStr,
+            procesado: precioPorHora
+        });
+    } else {
+        console.warn('⚠️ Estructura de datos incorrecta:', {
+            cancha: !!cancha,
+            tipoCancha: cancha?.tipoCancha,
+            precio: cancha?.tipoCancha?.precio
+        });
+    }
+    
+    if (precioPorHora === 0) {
+        console.warn('⚠️ No se pudo obtener el precio de la cancha');
+        if (totalPriceElement) totalPriceElement.textContent = '$0 COP';
         return 0;
     }
     
-    const duracionHoras = (fin - inicio) / (1000 * 60 * 60);
+    // Calcular duración en horas: hora_fin - hora_inicio
+    // Convertir las horas a números para el cálculo
+    const horaInicioNum = parseFloat(horaInicio.replace(':', '.'));
+    const horaFinNum = parseFloat(horaFin.replace(':', '.'));
     
-    // Validar máximo 2 horas
-    if (duracionHoras > 2) {
+    console.log('🕐 Conversión de horas:', {
+        horaInicio: horaInicio,
+        horaFin: horaFin,
+        horaInicioNum: horaInicioNum,
+        horaFinNum: horaFinNum
+    });
+    
+    if (horaFinNum <= horaInicioNum) {
+        console.log('❌ Hora de fin debe ser posterior a hora de inicio');
+        if (totalPriceElement) totalPriceElement.textContent = '$0 COP';
+        return 0;
+    }
+    
+    // Calcular duración correctamente: convertir formato HH:MM a decimal
+    const duracionHoras = horaFinNum - horaInicioNum;
+    console.log('⏱️ Duración en horas (decimal):', duracionHoras);
+    
+    // Para administradores, no aplicar límite de 2 horas en edición
+    const isEditing = document.getElementById('reservationId').value;
+    if (!isEditing && duracionHoras > 2) {
         alert('No se pueden reservar más de 2 horas consecutivas');
         document.getElementById('horaFin').value = '';
         return 0;
     }
     
-    let precioTotal = precioPorHora * duracionHoras;
+    // Paso 1: Calcular precio base = (hora_fin - hora_inicio) * precio_cancha
+    let precioTotal = duracionHoras * precioPorHora;
     let hasNightSurcharge = false;
     
-    // Verificar recargo nocturno (después de las 6 PM)
-    const horaInicioNum = parseInt(horaInicio.split(':')[0]);
-    const horaFinNum = parseInt(horaFin.split(':')[0]);
-    
+    // Paso 2: Aplicar recargo nocturno del 20% si pasa de las 6 PM
+    // Usar las horas ya convertidas a decimal para la verificación nocturna
     if (horaInicioNum >= 18 || horaFinNum > 18) {
-        precioTotal *= 1.2; // 20% de recargo
+        precioTotal = precioTotal * 1.2; // 20% de recargo
         hasNightSurcharge = true;
+        console.log('🌙 Recargo nocturno aplicado (20%)');
     }
     
-    if (totalPriceElement) totalPriceElement.textContent = formatPrice(precioTotal);
-    if (nightSurchargeNote) nightSurchargeNote.style.display = hasNightSurcharge ? 'block' : 'none';
+    // Paso 3: Restar el abono fijo de $15,000 COP
+    const abono = 15000;
+    const totalAPagar = Math.max(0, precioTotal - abono);
     
-    return precioTotal;
+    console.log('💵 Cálculo de precio:', {
+        duracionHoras: duracionHoras,
+        precioPorHora: precioPorHora,
+        precioBase: duracionHoras * precioPorHora,
+        recargoNocturno: hasNightSurcharge,
+        precioTotal: precioTotal,
+        abono: abono,
+        totalAPagar: totalAPagar
+    });
+    
+    // Mostrar el total que debe pagar (después del abono)
+    if (totalPriceElement) {
+        totalPriceElement.textContent = `$${totalAPagar.toLocaleString()} COP`;
+    }
+    if (nightSurchargeNote) {
+        nightSurchargeNote.style.display = hasNightSurcharge ? 'block' : 'none';
+    }
+    
+    // Retornar el total a pagar
+    return totalAPagar;
 }
 
 // Función para formatear precio
@@ -272,12 +342,23 @@ function formatPrice(price) {
 
 // Función para filtrar horas disponibles según la fecha seleccionada
 async function filterAvailableHours() {
+    console.log('🔍 Ejecutando filterAvailableHours()...');
     const fechaInput = document.getElementById('fecha');
     const horaInicioSelect = document.getElementById('horaInicio');
     const horaFinSelect = document.getElementById('horaFin');
-    const canchaSelect = document.getElementById('cancha');
+    const canchaSelect = document.getElementById('canchaId');
     
-    if (!fechaInput || !horaInicioSelect) return;
+    console.log('📋 Elementos encontrados:', {
+        fechaInput: !!fechaInput,
+        horaInicioSelect: !!horaInicioSelect,
+        horaFinSelect: !!horaFinSelect,
+        canchaSelect: !!canchaSelect
+    });
+    
+    if (!fechaInput || !horaInicioSelect) {
+        console.log('❌ Elementos requeridos no encontrados, saliendo de función');
+        return;
+    }
     
     const selectedDate = new Date(fechaInput.value + 'T00:00:00');
     const today = new Date();
@@ -329,31 +410,75 @@ async function filterAvailableHours() {
     
     // Obtener horarios ocupados si hay cancha y fecha seleccionadas
     let occupiedTimes = [];
+    console.log('🏟️ Valores actuales:', {
+        cancha: canchaSelect ? canchaSelect.value : 'null',
+        fecha: fechaInput ? fechaInput.value : 'null'
+    });
+    
     if (canchaSelect && canchaSelect.value && fechaInput.value) {
         try {
+            console.log('🌐 Consultando horarios ocupados...');
             const response = await fetch(`${API_BASE_URL}/reservas/horarios-ocupados?id_cancha=${canchaSelect.value}&fecha=${fechaInput.value}`, {
                 headers: {
                     'Authorization': `Bearer ${Auth.getToken()}`
                 }
             });
             
+            console.log('📡 Respuesta recibida:', response.status);
             if (response.ok) {
                 const data = await response.json();
                 occupiedTimes = data.horarios_ocupados || [];
-                console.log('Horarios ocupados obtenidos:', occupiedTimes);
+                console.log('✅ Horarios ocupados obtenidos:', occupiedTimes);
+            } else {
+                console.log('❌ Error en respuesta:', response.status, response.statusText);
             }
         } catch (error) {
-            console.error('Error al obtener horarios ocupados:', error);
+            console.error('❌ Error al obtener horarios ocupados:', error);
         }
+    } else {
+        console.log('⚠️ No se consultarán horarios ocupados - faltan cancha o fecha');
     }
     
     // Función para verificar si una hora está ocupada
     function isTimeOccupied(timeValue) {
-        return occupiedTimes.some(occupied => {
+        console.log(`🔍 === Verificando disponibilidad de ${timeValue} ===`);
+        console.log(`📋 Horarios ocupados totales:`, occupiedTimes);
+        
+        const isOccupied = occupiedTimes.some(occupied => {
             const startTime = occupied.hora_inicio;
             const endTime = occupied.hora_fin;
-            return timeValue >= startTime && timeValue < endTime;
+            
+            console.log(`⏰ Comparando ${timeValue} con reserva ${occupied.estado}:`);
+            console.log(`   - Inicio: ${startTime}`);
+            console.log(`   - Fin: ${endTime}`);
+            
+            // Usar la misma lógica numérica que funciona para las 2 horas máximas
+            const timeValueNum = parseInt(timeValue.split(':')[0]);
+            const startTimeNum = parseInt(startTime.toString().split(':')[0]);
+            const endTimeNum = parseInt(endTime.toString().split(':')[0]);
+            
+            console.log(`� Valores numéricos:`);
+            console.log(`   - timeValue: ${timeValueNum}`);
+            console.log(`   - startTime: ${startTimeNum}`);
+            console.log(`   - endTime: ${endTimeNum}`);
+            
+            // Bloquear si la hora cae dentro del rango ocupado
+            // Para reservas confirmadas o pendientes, bloquear todo el rango
+            const blocked = timeValueNum >= startTimeNum && timeValueNum < endTimeNum;
+            
+            console.log(`🧮 Comparación numérica:`);
+            console.log(`   - ${timeValueNum} >= ${startTimeNum}: ${timeValueNum >= startTimeNum}`);
+            console.log(`   - ${timeValueNum} < ${endTimeNum}: ${timeValueNum < endTimeNum}`);
+            console.log(`   - Bloqueada: ${blocked}`);
+            
+            if (blocked) {
+                console.log(`❌ Hora ${timeValue} bloqueada por reserva ${occupied.estado}: ${startTime}-${endTime}`);
+            }
+            
+            return blocked;
         });
+        console.log(`🎯 Resultado final: Hora ${timeValue} ocupada: ${isOccupied}`);
+        return isOccupied;
     }
     
     // Guardar valores seleccionados
@@ -371,23 +496,21 @@ async function filterAvailableHours() {
         allHours.filter(hour => hour.hour > currentHour) : 
         allHours;
     
-    // Agregar opciones de hora de inicio
+    // Agregar opciones de hora de inicio - ADMINISTRADORES PUEDEN VER TODAS LAS HORAS
+    console.log('🕐 Procesando horas de inicio para administrador...');
     availableStartHours.forEach(hour => {
         const option = document.createElement('option');
         option.value = hour.value;
         option.textContent = hour.text;
         
-        // Deshabilitar si está ocupada
-        if (isTimeOccupied(hour.value)) {
-            option.disabled = true;
-            option.textContent += ' (Ocupado)';
-            option.style.color = '#999';
-        }
+        // Para administradores: NO deshabilitar horas ocupadas
+        // Permitir seleccionar cualquier hora para modificar reservas
         
         horaInicioSelect.appendChild(option);
     });
+    console.log(`✅ ${availableStartHours.length} horas de inicio disponibles para administrador`);
     
-    // Agregar opciones de hora de fin
+    // Agregar opciones de hora de fin - ADMINISTRADORES PUEDEN VER TODAS LAS HORAS
     if (horaFinSelect) {
         const availableEndHours = isToday ? 
             endHours.filter(hour => hour.hour > currentHour) : 
@@ -398,27 +521,26 @@ async function filterAvailableHours() {
             option.value = hour.value;
             option.textContent = hour.text;
             
-            // Deshabilitar si está ocupada
-            if (isTimeOccupied(hour.value)) {
-                option.disabled = true;
-                option.textContent += ' (Ocupado)';
-                option.style.color = '#999';
-            }
+            // Para administradores: NO deshabilitar horas ocupadas
+            // Permitir seleccionar cualquier hora para modificar reservas
             
             horaFinSelect.appendChild(option);
         });
+        console.log(`✅ ${availableEndHours.length} horas de fin disponibles para administrador`);
     }
     
-    // Restaurar valores seleccionados si aún están disponibles y no ocupados
-    if (selectedStartHour && availableStartHours.some(h => h.value === selectedStartHour) && !isTimeOccupied(selectedStartHour)) {
+    // Restaurar valores seleccionados - ADMINISTRADORES PUEDEN RESTAURAR CUALQUIER HORA
+    if (selectedStartHour && availableStartHours.some(h => h.value === selectedStartHour)) {
         horaInicioSelect.value = selectedStartHour;
+        console.log(`🔄 Hora de inicio restaurada para administrador: ${selectedStartHour}`);
     }
     if (selectedEndHour && horaFinSelect) {
         const availableEndHours = isToday ? 
             endHours.filter(hour => hour.hour > currentHour) : 
             endHours;
-        if (availableEndHours.some(h => h.value === selectedEndHour) && !isTimeOccupied(selectedEndHour)) {
+        if (availableEndHours.some(h => h.value === selectedEndHour)) {
             horaFinSelect.value = selectedEndHour;
+            console.log(`🔄 Hora de fin restaurada para administrador: ${selectedEndHour}`);
         }
     }
 }
@@ -564,7 +686,8 @@ function displayReservations() {
         const usuario = reservation.usuario;
         
         const statusClass = reservation.estado === 'confirmada' ? 'confirmed' : 
-                          reservation.estado === 'pendiente' ? 'pending' : 'cancelled';
+                          reservation.estado === 'pendiente' ? 'pending' : 
+                          reservation.estado === 'finalizada' ? 'completed' : 'cancelled';
         
         return `
             <div class="reservation-card ${statusClass}">
@@ -658,12 +781,33 @@ function openCreateModal() {
     document.getElementById('priceInfo').style.display = 'none';
     document.getElementById('paymentStatus').style.display = 'none';
     
+    // Establecer la fecha de hoy por defecto
+    const fechaInput = document.getElementById('fecha');
+    if (fechaInput) {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+        fechaInput.value = todayStr;
+        console.log('📅 Fecha establecida por defecto:', todayStr);
+    }
+    
+    // Seleccionar la primera cancha por defecto si hay canchas disponibles
+    const canchaSelect = document.getElementById('canchaId');
+    if (canchaSelect && canchas.length > 0 && !canchaSelect.value) {
+        canchaSelect.value = canchas[0].id;
+        console.log('🏟️ Cancha seleccionada por defecto:', canchas[0].nombre);
+        updatePriceInfo(); // Actualizar información de precio cuando se selecciona cancha
+    }
+    
     // Ocultar elementos específicos de edición
     const estadoGroup = document.getElementById('estadoGroup');
     
     if (estadoGroup) {
         estadoGroup.style.display = 'none';
     }
+    
+    // Mostrar el campo de búsqueda de cliente para nueva reserva
+    document.getElementById('clienteBuscador').style.display = 'block';
+    document.getElementById('clienteSeleccionado').style.display = 'none';
     
     paymentCompleted = false; // Resetear estado de pago
     
@@ -676,7 +820,7 @@ function openCreateModal() {
     updatePaymentDisplay();
     
     // Filtrar horas disponibles al abrir el modal
-    filterAvailableHours();
+    setTimeout(() => filterAvailableHours(), 100); // Pequeño delay para asegurar que el DOM esté listo
     
     document.getElementById('reservationModal').classList.add('show');
 }
@@ -738,74 +882,174 @@ function updateSaveButton() {
 }
 
 // Editar reserva
-function editReservation(id) {
-    const reservation = reservations.find(r => r.id === id);
-    if (!reservation) {
-        console.error('Reserva no encontrada:', id);
-        return;
-    }
-
-    // Establecer elementos del modal
-    document.getElementById('modalTitle').textContent = 'Editar Reserva';
-    document.getElementById('reservationId').value = reservation.id;
-    document.getElementById('canchaId').value = reservation.id_cancha;
-    
-    // Formatear la fecha correctamente para el input date
-    const fechaReserva = new Date(reservation.fecha_reserva);
-    const fechaFormateada = fechaReserva.toISOString().split('T')[0];
-    document.getElementById('fecha').value = fechaFormateada;
-    
-    // Filtrar horas disponibles para la fecha seleccionada
-    filterAvailableHours();
-    
-    // Establecer horas después de filtrar
-    setTimeout(() => {
-        const horaString = reservation.hora_inicio;
-        const horaFormateada = horaString.substring(0, 5);
-        document.getElementById('horaInicio').value = horaFormateada;
+async function editReservation(id) {
+    try {
+        const reservation = await ApiService.reservas.getById(id);
+        console.log('🔍 Datos de la reserva recibidos:', reservation);
         
-        const horaFinString = reservation.hora_fin;
-        const horaFinFormateada = horaFinString.substring(0, 5);
-        document.getElementById('horaFin').value = horaFinFormateada;
-    }, 100);
-    
-    document.getElementById('observaciones').value = reservation.observaciones || '';
-
-    // Establecer información del cliente si existe
-    if (reservation.usuario) {
+        // Configurar el modal para edición
+        document.getElementById('modalTitle').textContent = 'Editar Reserva';
+        document.getElementById('reservationId').value = id;
+        
+        // Llenar los campos del formulario
+        document.getElementById('canchaId').value = reservation.id_cancha;
+        document.getElementById('fecha').value = reservation.fecha_reserva;
+        
+        // Mostrar el selector de estado
+        document.getElementById('estadoGroup').style.display = 'block';
+        document.getElementById('estadoReserva').value = reservation.estado;
+        
+        // Configurar cliente - usar los datos enriquecidos del API
         document.getElementById('clienteId').value = reservation.id_usuario;
-        document.getElementById('clienteBuscador').value = reservation.usuario.nombre;
-        hideSearchResults();
-
-        // Mostrar información del cliente seleccionado
-        selectedClient = {
-            id: reservation.id_usuario,
-            nombre: reservation.usuario.nombre,
-            email: reservation.usuario.correo,
-            telefono: reservation.usuario.telefono
-        };
-
+        
+        // El API devuelve customerName y customerPhone como datos enriquecidos
+        const clienteName = reservation.customerName || reservation.usuario?.nombre || 'Cliente no encontrado';
+        const clientePhone = reservation.customerPhone || reservation.usuario?.telefono || '';
+        const clienteEmail = reservation.usuario?.email || '';
+        
+        console.log('👤 Datos del cliente:', {
+            name: clienteName,
+            phone: clientePhone,
+            email: clienteEmail
+        });
+        
+        document.getElementById('clienteBuscador').value = clienteName;
+        document.getElementById('clienteTelefono').value = clientePhone;
+        document.getElementById('observaciones').value = reservation.observaciones || '';
+        
+        // Mostrar cliente seleccionado
         document.getElementById('clienteSeleccionado').style.display = 'block';
-        document.getElementById('clienteNombreSeleccionado').textContent = selectedClient.nombre;
-        document.getElementById('clienteEmailSeleccionado').textContent = selectedClient.email;
-        document.getElementById('clienteTelefono').value = selectedClient.telefono || '';
-    }
-
-    // Mostrar elementos específicos de edición
-    const estadoGroup = document.getElementById('estadoGroup');
-    
-    if (estadoGroup) {
-        estadoGroup.style.display = 'block';
-        const estadoSelect = document.getElementById('estadoReserva');
-        if (estadoSelect) {
-            estadoSelect.value = reservation.estado;
+        document.getElementById('clienteNombreSeleccionado').textContent = clienteName;
+        document.getElementById('clienteEmailSeleccionado').textContent = clienteEmail;
+        document.getElementById('clienteBuscador').style.display = 'none';
+        
+        // Como administrador, siempre permitir edición libre de horarios
+        // Mostrar dropdowns normales
+        document.getElementById('horaInicio').style.display = 'block';
+        document.getElementById('horaFin').style.display = 'block';
+        document.getElementById('horaInicioReadonly').style.display = 'none';
+        document.getElementById('horaFinReadonly').style.display = 'none';
+        
+        // Asegurar que los campos tengan el atributo required
+        document.getElementById('horaInicio').setAttribute('required', 'required');
+        document.getElementById('horaFin').setAttribute('required', 'required');
+        
+        // Filtrar horarios disponibles (pero permitir seleccionar cualquier horario)
+        await filterAvailableHours();
+        
+        // Establecer valores de hora DESPUÉS de que filterAvailableHours complete
+        console.log('🕐 Estableciendo horas de la reserva:', {
+            horaInicio: reservation.hora_inicio,
+            horaFin: reservation.hora_fin
+        });
+        
+        // Asegurar que las opciones estén disponibles antes de establecer valores
+        const horaInicioSelect = document.getElementById('horaInicio');
+        const horaFinSelect = document.getElementById('horaFin');
+        
+        if (horaInicioSelect && reservation.hora_inicio) {
+            // Buscar la opción exacta o crear una nueva si no existe
+            let optionExists = false;
+            for (let option of horaInicioSelect.options) {
+                if (option.value === reservation.hora_inicio) {
+                    optionExists = true;
+                    break;
+                }
+            }
+            
+            if (!optionExists) {
+                const newOption = new Option(reservation.hora_inicio, reservation.hora_inicio);
+                horaInicioSelect.add(newOption);
+            }
+            
+            horaInicioSelect.value = reservation.hora_inicio;
+            console.log('✅ Hora de inicio establecida:', horaInicioSelect.value);
         }
+        
+        if (horaFinSelect && reservation.hora_fin) {
+            // Buscar la opción exacta o crear una nueva si no existe
+            let optionExists = false;
+            for (let option of horaFinSelect.options) {
+                if (option.value === reservation.hora_fin) {
+                    optionExists = true;
+                    break;
+                }
+            }
+            
+            if (!optionExists) {
+                const newOption = new Option(reservation.hora_fin, reservation.hora_fin);
+                horaFinSelect.add(newOption);
+            }
+            
+            horaFinSelect.value = reservation.hora_fin;
+            console.log('✅ Hora de fin establecida:', horaFinSelect.value);
+        }
+        
+        // Calcular precio después de establecer las horas
+        calculatePrice();
+        
+        // Actualizar información de precios
+        updatePriceInfo();
+        updatePaymentDisplay();
+        
+        // Mostrar el modal
+        document.getElementById('reservationModal').classList.add('show');
+        
+    } catch (error) {
+        console.error('Error al cargar la reserva:', error);
+        alert('Error al cargar los datos de la reserva');
     }
+}
 
-    // Actualizar información de pago según el estado
-    updatePaymentDisplay();
-
-    document.getElementById('reservationModal').classList.add('show');
+// Función para verificar si se puede modificar el horario de una reserva
+async function canModifyReservationSchedule(reservation) {
+    try {
+        // Obtener horarios ocupados para la fecha y cancha
+        const response = await fetch(`${API_BASE_URL}/reservas/horarios-ocupados?id_cancha=${reservation.id_cancha}&fecha=${reservation.fecha_reserva}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al obtener horarios ocupados');
+        }
+        
+        const data = await response.json();
+        const occupiedTimes = data.horarios_ocupados || [];
+        
+        // Filtrar horarios ocupados excluyendo la reserva actual
+        const otherOccupiedTimes = occupiedTimes.filter(time => 
+            time.reservation_id !== reservation.id
+        );
+        
+        // Si no hay otros horarios ocupados, se puede modificar
+        if (otherOccupiedTimes.length === 0) {
+            return true;
+        }
+        
+        // Verificar si el horario actual está en conflicto con otros
+        const currentStart = reservation.hora_inicio;
+        const currentEnd = reservation.hora_fin;
+        
+        for (const occupiedTime of otherOccupiedTimes) {
+            // Verificar si hay solapamiento
+            if (
+                (currentStart >= occupiedTime.hora_inicio && currentStart < occupiedTime.hora_fin) ||
+                (currentEnd > occupiedTime.hora_inicio && currentEnd <= occupiedTime.hora_fin) ||
+                (currentStart <= occupiedTime.hora_inicio && currentEnd >= occupiedTime.hora_fin)
+            ) {
+                return false; // Hay conflicto, no se puede modificar
+            }
+        }
+        
+        return true; // No hay conflictos, se puede modificar
+        
+    } catch (error) {
+        console.error('Error al verificar disponibilidad de horarios:', error);
+        return false; // En caso de error, no permitir modificación
+    }
 }
 
 // Cerrar modal
@@ -831,13 +1075,11 @@ function updatePaymentDisplay() {
         return;
     }
     
-    // Calcular precio total y pago restante
-    const precioTotal = calculatePrice();
-    const abono = 15000;
-    const restante = Math.max(0, precioTotal - abono);
+    // Obtener el total a pagar directamente de calculatePrice (ya incluye el cálculo correcto)
+    const totalAPagar = calculatePrice();
     
     if (pagoRestanteValue) {
-        pagoRestanteValue.textContent = `$${restante.toLocaleString()} COP`;
+        pagoRestanteValue.textContent = `$${totalAPagar.toLocaleString()} COP`;
     }
     
     // Remover todas las clases de estado
@@ -856,6 +1098,12 @@ function updatePaymentDisplay() {
         }
         // Pago restante mantiene estilos por defecto (rojo)
     }
+    
+    console.log('💳 Actualización de pago:', {
+        totalAPagar: totalAPagar,
+        estado: estadoSelect?.value,
+        pagoCompletado: paymentCompleted
+    });
 }
 
 // Guardar reserva
@@ -923,12 +1171,14 @@ async function saveReservation() {
         id_cancha: parseInt(canchaId),
         id_usuario: parseInt(clienteId), // Usar el ID del cliente seleccionado
         fecha_reserva: fecha, // Enviar solo la fecha sin conversión a ISO
-        hora_inicio: horaInicio + ':00', // Formato HH:MM:SS
-        hora_fin: horaFin + ':00', // Formato HH:MM:SS
+        hora_inicio: horaInicio, // Formato HH:MM (sin segundos)
+        hora_fin: horaFin, // Formato HH:MM (sin segundos)
         estado: estadoReserva,
         observaciones: observaciones || null,
         telefono_cliente: telefonoCliente || null
     };
+    
+    console.log('📤 Datos a enviar al servidor:', reservationData);
 
     try {
         let url, method;
@@ -969,6 +1219,7 @@ async function saveReservation() {
             // Resetear el estado del pago después de crear la reserva
             paymentCompleted = false;
         } else {
+            console.error('❌ Error del servidor:', response.status, responseData);
             Utils.showToast(responseData.error || `Error del servidor: ${response.status}`, 'error');
         }
     } catch (error) {
@@ -1072,7 +1323,8 @@ function displayFilteredReservations(filteredReservations) {
         const usuario = reservation.usuario;
         
         const statusClass = reservation.estado === 'confirmada' ? 'confirmed' : 
-                          reservation.estado === 'pendiente' ? 'pending' : 'cancelled';
+                          reservation.estado === 'pendiente' ? 'pending' : 
+                          reservation.estado === 'finalizada' ? 'completed' : 'cancelled';
         
         return `
             <div class="reservation-card ${statusClass}">
@@ -1142,12 +1394,40 @@ function logout() {
     window.location.href = 'login.html';
 }
 
+// Función para inicializar el auto-refresh
+function startAutoRefresh() {
+    // Limpiar cualquier intervalo existente
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    // Configurar auto-refresh cada 30 segundos
+    autoRefreshInterval = setInterval(() => {
+        console.log('🔄 Auto-refresh: Actualizando reservas...');
+        loadReservations();
+    }, 30000); // 30 segundos
+    
+    console.log('✅ Auto-refresh iniciado (cada 30 segundos)');
+}
+
+// Función para detener el auto-refresh
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        console.log('⏹️ Auto-refresh detenido');
+    }
+}
+
 // Inicializar
 window.addEventListener('load', () => {
     checkAuth();
     loadCanchas();
     loadReservations();
     initializeClientSearch();
+    
+    // Iniciar auto-refresh
+    startAutoRefresh();
     
     // Agregar event listener para el cambio de fecha
     const fechaInput = document.getElementById('fecha');
@@ -1158,7 +1438,7 @@ window.addEventListener('load', () => {
     }
     
     // Agregar event listener para el cambio de cancha
-    const canchaSelect = document.getElementById('cancha');
+    const canchaSelect = document.getElementById('canchaId');
     if (canchaSelect) {
         canchaSelect.addEventListener('change', filterAvailableHours);
     }
@@ -1199,4 +1479,9 @@ window.addEventListener('load', () => {
     if (filterDate) {
         filterDate.addEventListener('change', filterReservations);
     }
+});
+
+// Detener auto-refresh cuando se cierra la página
+window.addEventListener('beforeunload', () => {
+    stopAutoRefresh();
 });

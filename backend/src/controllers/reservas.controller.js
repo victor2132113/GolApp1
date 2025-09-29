@@ -1,4 +1,6 @@
 const db = require('../../models');
+const { Op } = require('sequelize');
+const { sequelize } = require('../../models');
 const Reserva = db.Reserva;
 const Cancha = db.Cancha;
 const Usuario = db.Usuario;
@@ -322,7 +324,19 @@ exports.findByUser = async (req, res) => {
 // Obtener todas las reservas con datos enriquecidos
 exports.findAll = async (req, res) => {
   try {
+    // Construir filtros dinámicamente
+    const whereClause = {};
+    
+    // Si se proporciona fecha, filtrar por ella
+    if (req.query.fecha) {
+      whereClause.fecha_reserva = {
+        [Op.like]: `%${req.query.fecha}%`
+      };
+      console.log(`Filtrando reservas por fecha: ${req.query.fecha}`);
+    }
+    
     const reservas = await Reserva.findAll({
+      where: whereClause,
       include: [
         {
           model: Cancha,
@@ -810,16 +824,36 @@ exports.getOccupiedTimes = async (req, res) => {
       });
     }
 
-    console.log(`Consultando horarios ocupados para cancha ${id_cancha} en fecha ${fecha}`);
+    console.log(`🔍 Consultando horarios ocupados para cancha ${id_cancha} en fecha ${fecha}`);
+    console.log(`📊 Tipos de datos: id_cancha=${typeof id_cancha}, fecha=${typeof fecha}`);
 
-    const reservas = await Reserva.findAll({
-      where: {
-        id_cancha: parseInt(id_cancha),
-        fecha_reserva: new Date(fecha + 'T12:00:00'),
-        estado: ['pendiente', 'confirmada']
+    // Usar consulta SQL directa para evitar problemas de timezone de Sequelize
+    const { QueryTypes } = require('sequelize');
+
+    const query = `
+      SELECT hora_inicio, hora_fin, estado, fecha_reserva
+      FROM reservas 
+      WHERE id_cancha = :id_cancha 
+        AND DATE(fecha_reserva) = :fecha
+        AND estado IN ('pendiente', 'confirmada')
+      ORDER BY hora_inicio ASC
+    `;
+
+    console.log(`🗄️ Ejecutando consulta SQL directa:`);
+    console.log(`   Query: ${query}`);
+    console.log(`   Parámetros: id_cancha=${id_cancha}, fecha=${fecha}`);
+
+    const reservas = await sequelize.query(query, {
+      replacements: { 
+        id_cancha: parseInt(id_cancha), 
+        fecha: fecha 
       },
-      attributes: ['hora_inicio', 'hora_fin', 'estado'],
-      order: [['hora_inicio', 'ASC']]
+      type: QueryTypes.SELECT
+    });
+
+    console.log(`📋 Reservas encontradas (${reservas.length}):`);
+    reservas.forEach((reserva, index) => {
+      console.log(`   ${index + 1}. Fecha: ${reserva.fecha_reserva}, Horario: ${reserva.hora_inicio}-${reserva.hora_fin}, Estado: ${reserva.estado}`);
     });
 
     const horariosOcupados = reservas.map(reserva => ({
@@ -828,7 +862,7 @@ exports.getOccupiedTimes = async (req, res) => {
       estado: reserva.estado
     }));
 
-    console.log(`Encontrados ${horariosOcupados.length} horarios ocupados`);
+    console.log(`✅ Devolviendo ${horariosOcupados.length} horarios ocupados para fecha ${fecha}`);
 
     res.status(200).json({
       cancha_id: parseInt(id_cancha),
@@ -836,7 +870,7 @@ exports.getOccupiedTimes = async (req, res) => {
       horarios_ocupados: horariosOcupados
     });
   } catch (error) {
-    console.error('Error al obtener horarios ocupados:', error);
+    console.error('❌ Error al obtener horarios ocupados:', error);
     res.status(500).json({ error: 'Error al obtener horarios ocupados' });
   }
 };

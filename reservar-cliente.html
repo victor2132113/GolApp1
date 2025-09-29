@@ -809,6 +809,10 @@
             }
         }
 
+        // Variables globales
+        let paymentCompleted = false;
+        let occupiedTimes = []; // Variable global para horarios ocupados
+
         // Verificar autenticación al cargar
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM cargado, verificando config.js...');
@@ -851,10 +855,7 @@
 
         function setMinDate() {
             const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            const minDate = tomorrow.toISOString().split('T')[0];
+            const minDate = today.toISOString().split('T')[0];
             document.getElementById('fecha').min = minDate;
         }
 
@@ -970,9 +971,11 @@
             calculateTotal();
         }
 
-        function updateHoraFinalOptions() {
+        async function updateHoraFinalOptions() {
             const horaInicio = document.getElementById('hora').value;
             const horaFinalSelect = document.getElementById('horaFinal');
+            const canchaSelect = document.getElementById('cancha');
+            const fechaInput = document.getElementById('fecha');
             
             if (!horaInicio) {
                 // Deshabilitar todas las opciones si no hay hora de inicio
@@ -984,14 +987,104 @@
 
             const horaInicioNum = parseInt(horaInicio.split(':')[0]);
             
+            // Obtener horarios ocupados si tenemos cancha y fecha
+            if (canchaSelect.value && fechaInput.value) {
+                try {
+                    const response = await fetch(`${CONFIG.API_BASE_URL}/reservas/horarios-ocupados?id_cancha=${canchaSelect.value}&fecha=${fechaInput.value}`, {
+                        headers: {
+                            'Authorization': `Bearer ${Auth.getToken()}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        occupiedTimes = data.horarios_ocupados || [];
+                        console.log('Horarios ocupados para hora final:', occupiedTimes);
+                    }
+                } catch (error) {
+                    console.error('Error al obtener horarios ocupados:', error);
+                }
+            }
+            
+            // Función para normalizar formato de hora
+            function normalizeTimeFormat(timeStr) {
+                if (!timeStr) return '';
+                
+                // Si ya está en formato 24h (07:00:00), devolverlo tal como está
+                if (timeStr.match(/^\d{2}:\d{2}:\d{2}$/)) {
+                    return timeStr;
+                }
+                
+                // Si está en formato 12h (7:00 AM), convertir a 24h
+                if (timeStr.includes('AM') || timeStr.includes('PM')) {
+                    const [time, period] = timeStr.split(' ');
+                    const [hours, minutes] = time.split(':');
+                    let hour24 = parseInt(hours);
+                    
+                    if (period === 'PM' && hour24 !== 12) {
+                        hour24 += 12;
+                    } else if (period === 'AM' && hour24 === 12) {
+                        hour24 = 0;
+                    }
+                    
+                    return `${hour24.toString().padStart(2, '0')}:${minutes}:00`;
+                }
+                
+                // Si está en formato simple (7:00), asumir formato 24h y agregar segundos
+                if (timeStr.match(/^\d{1,2}:\d{2}$/)) {
+                    const [hours, minutes] = timeStr.split(':');
+                    return `${hours.padStart(2, '0')}:${minutes}:00`;
+                }
+                
+                return timeStr;
+            }
+            
+            // Función para verificar si una hora de fin está ocupada
+            function isEndTimeOccupied(timeValue) {
+                const normalizedTimeValue = normalizeTimeFormat(timeValue);
+                
+                return occupiedTimes.some(occupied => {
+                    const startTime = normalizeTimeFormat(occupied.hora_inicio);
+                    const endTime = normalizeTimeFormat(occupied.hora_fin);
+                    
+                    // Bloquear si la hora de fin cae dentro del rango ocupado
+                    return normalizedTimeValue > startTime && normalizedTimeValue <= endTime;
+                });
+            }
+            
             Array.from(horaFinalSelect.options).forEach(option => {
                 if (option.value) {
                     const horaFinalNum = parseInt(option.value.split(':')[0]);
                     
-                    // Deshabilitar si es menor o igual a la hora de inicio
-                    // o si la diferencia es mayor a 2 horas
+                    // Verificar duración máxima (2 horas)
                     const diferencia = horaFinalNum - horaInicioNum;
-                    option.disabled = diferencia <= 0 || diferencia > 2;
+                    const excedeDuracion = diferencia <= 0 || diferencia > 2;
+                    
+                    // Verificar si está ocupada
+                    const estaOcupada = isEndTimeOccupied(option.value);
+                    
+                    // Deshabilitar si excede duración O está ocupada
+                    const debeBloquear = excedeDuracion || estaOcupada;
+                    option.disabled = debeBloquear;
+                    
+                    // Actualizar texto y estilo visual
+                    let textoOriginal = option.textContent.replace(' (Ocupado)', '').replace(' (Duración máx.)', '');
+                    
+                    if (estaOcupada) {
+                        option.textContent = textoOriginal + ' (Ocupado)';
+                        option.style.color = '#999';
+                        option.style.backgroundColor = '#f5f5f5';
+                    } else if (excedeDuracion && diferencia > 2) {
+                        option.textContent = textoOriginal + ' (Duración máx.)';
+                        option.style.color = '#999';
+                        option.style.backgroundColor = '#fff3cd';
+                    } else {
+                        option.textContent = textoOriginal;
+                        option.style.color = '';
+                        option.style.backgroundColor = '';
+                    }
+                    
+                    console.log(`Hora final ${option.value}: excedeDuracion=${excedeDuracion}, estaOcupada=${estaOcupada}, bloqueada=${debeBloquear}`);
                 }
             });
         }
@@ -1211,9 +1304,6 @@
             }
         }
 
-        // Variables para el sistema de abono
-        let paymentCompleted = false;
-
         // Funciones para el modal de pago
         function openPaymentModal() {
             console.log('openPaymentModal called');
@@ -1322,7 +1412,7 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    const occupiedTimes = data.horarios_ocupados || [];
+                    occupiedTimes = data.horarios_ocupados || [];
                     console.log('Horarios ocupados obtenidos:', occupiedTimes);
                     console.log('Cancha seleccionada:', canchaSelect.value);
                     console.log('Fecha seleccionada:', fechaInput.value);
@@ -1381,16 +1471,17 @@
                         const isAvailable = !occupiedTimes.some(occupied => {
                             const startTime = normalizeTimeFormat(occupied.hora_inicio);
                             const endTime = normalizeTimeFormat(occupied.hora_fin);
-                            console.log(`⏰ Comparando ${normalizedTimeValue} con reserva ${startTime}-${endTime}`);
+                            console.log(`⏰ Comparando ${normalizedTimeValue} con reserva ${startTime}-${endTime} (${occupied.estado})`);
                             
-                            // No permitir iniciar en horarios ocupados (incluyendo las horas exactas de inicio y fin)
+                            // Bloquear si la hora de inicio cae dentro del rango ocupado
+                            // Incluye tanto el inicio como cualquier momento antes del fin
                             const blocked = normalizedTimeValue >= startTime && normalizedTimeValue < endTime;
                             console.log(`   ${normalizedTimeValue} >= ${startTime}: ${normalizedTimeValue >= startTime}`);
                             console.log(`   ${normalizedTimeValue} < ${endTime}: ${normalizedTimeValue < endTime}`);
                             console.log(`   Resultado bloqueado: ${blocked}`);
                             
                             if (blocked) {
-                                console.log(`❌ Hora ${timeValue} bloqueada por reserva ${occupied.hora_inicio}-${occupied.hora_fin}`);
+                                console.log(`❌ Hora ${timeValue} bloqueada por reserva ${occupied.estado}: ${occupied.hora_inicio}-${occupied.hora_fin}`);
                             }
                             return blocked;
                         });
@@ -1408,16 +1499,17 @@
                         const isAvailable = !occupiedTimes.some(occupied => {
                             const startTime = normalizeTimeFormat(occupied.hora_inicio);
                             const endTime = normalizeTimeFormat(occupied.hora_fin);
-                            console.log(`⏰ Comparando hora fin ${normalizedTimeValue} con reserva ${startTime}-${endTime}`);
+                            console.log(`⏰ Comparando hora fin ${normalizedTimeValue} con reserva ${startTime}-${endTime} (${occupied.estado})`);
                             
-                            // No permitir terminar en horarios ocupados (incluyendo las horas exactas de inicio y fin)
+                            // Bloquear si la hora de fin cae dentro del rango ocupado
+                            // No permitir terminar en medio de una reserva existente
                             const blocked = normalizedTimeValue > startTime && normalizedTimeValue <= endTime;
                             console.log(`   ${normalizedTimeValue} > ${startTime}: ${normalizedTimeValue > startTime}`);
                             console.log(`   ${normalizedTimeValue} <= ${endTime}: ${normalizedTimeValue <= endTime}`);
                             console.log(`   Resultado bloqueado: ${blocked}`);
                             
                             if (blocked) {
-                                console.log(`❌ Hora fin ${timeValue} bloqueada por reserva ${occupied.hora_inicio}-${occupied.hora_fin}`);
+                                console.log(`❌ Hora fin ${timeValue} bloqueada por reserva ${occupied.estado}: ${occupied.hora_inicio}-${occupied.hora_fin}`);
                             }
                             return blocked;
                         });
